@@ -1,4 +1,4 @@
-# Essentials - Scripts de Setup de Ambiente
+# Essential's Programming Pack - Scripts de Setup de Ambiente
 
 Este repositório contém um conjunto de scripts para automatizar a configuração de um ambiente de desenvolvimento e cibersegurança em máquinas Windows, com foco na integração com o WSL 2 (Ubuntu).
 
