@@ -44,11 +44,11 @@ Este projeto instala e configura automaticamente:
 
 1.  Clone este repositório:
     ```bash
-    git clone [https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git](https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git)
+    git clone [https://github.com/reireymond/ESSENTIALSPPACK.git](https://github.com/reireymond/ESSENTIALSPPACK.git)
     ```
 2.  Navegue até a pasta:
     ```powershell
-    cd SEU-REPOSITORIO
+    cd ESSENTIALSPPACK
     ```
 3.  Execute o script mestre **como Administrador**:
     * Clique com o botão direito em `setup_windows.ps1` e escolha "Executar com PowerShell".
@@ -62,7 +62,7 @@ O script cuidará da instalação do Chocolatey e de todas as ferramentas do Win
 2.  Navegue até a pasta do repositório (ela é montada automaticamente):
     ```bash
     # Exemplo de caminho (ajuste para o seu):
-    cd /mnt/c/Users/SeuUsuario/caminho/para/SEU-REPOSITORIO
+    cd /mnt/c/Users/SeuUsuario/caminho-para-repositorio/ESSENTIALSPPACK
     ```
 3.  Dê permissão de execução ao script:
     ```bash
