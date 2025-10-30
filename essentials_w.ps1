@@ -4,9 +4,10 @@
     Usa o Chocolatey para instalar todas as ferramentas.
 .DESCRIPTION
     Este script automatiza a instalação de IDEs, linguagens,
-    ferramentas de build e um conjunto de ferramentas de pentesting.
+    ferramentas de build, um conjunto de ferramentas de pentesting
+    e todos os runtimes e dependências essenciais do Windows.
 .NOTES
-    Versão: 1.1
+    Versão: 1.2
     Autor: Kaua
     REQUISITO: Execute este script como ADMINISTRADOR.
     REQUISITO: Instale o Chocolatey primeiro!
@@ -112,10 +113,30 @@ Write-Host "  -> Frameworks de Exploração..." -ForegroundColor Magenta
 choco install metasploit-framework
 choco install putty
 
+# --- 10. DEPENDÊNCIAS ESSENCIAIS (Runtimes) ---
+Write-Host ""
+Write-Host "[+] Instalando Runtimes e Dependências Essenciais..." -ForegroundColor Yellow
+
+# 10.1. Visual C++ Redistributables (Equivalente ao All-in-One)
+Write-Host "  -> Instalando todos os Runtimes do Visual C++ (2005-2022)..." -ForegroundColor Yellow
+choco install vcredist-all
+
+# 10.2. .NET Frameworks Legados (o .NET SDK moderno já está na seção 3)
+Write-Host "  -> Instalando .NET Frameworks legados (3.5 e 4.x)..." -ForegroundColor Yellow
+choco install dotnet3.5
+choco install dotnetfx
+
+# 10.3. Java Runtime (JRE)
+Write-Host "  -> Instalando Java Runtime Environment 8 (JRE)..." -ForegroundColor Yellow
+choco install jre8
+
+
 # --- Finalização ---
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "  SCRIPT DO WINDOWS CONCLUÍDO!" -ForegroundColor Green
 Write-Host "================================================="
 Write-Host "Reinicie seu terminal para que as alterações de PATH tenham efeito." -ForegroundColor Yellow
+Write-Host "Pode ser necessário REINICIAR O COMPUTADOR para que todos os"
+Write-Host "runtimes (VC++ e .NET) sejam corretamente registrados." -ForegroundColor Yellow
 Write-Host "Próximo passo: Execute o script 'meu_setup_wsl.sh' dentro do Ubuntu." -ForegroundColor Cyan
