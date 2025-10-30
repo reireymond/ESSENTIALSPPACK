@@ -4,10 +4,10 @@
     Usa o Chocolatey para instalar todas as ferramentas.
 .DESCRIPTION
     Este script automatiza a instalação de IDEs, linguagens,
-    ferramentas de build, um conjunto de ferramentas de pentesting
-    e todos os runtimes e dependências essenciais do Windows.
+    ferramentas de build, um conjunto de ferramentas de pentesting,
+    diagnóstico de hardware e todos os runtimes essenciais do Windows.
 .NOTES
-    Versão: 1.3
+    Versão: 1.5
     Autor: Kaua
     REQUISITO: Execute este script como ADMINISTRADOR.
     REQUISITO: Instale o Chocolatey primeiro!
@@ -77,35 +77,54 @@ Write-Host "[+] Instalando Clientes de API e Banco de Dados..." -ForegroundColor
 choco install dbeaver
 choco install postman
 
-# --- 8. Diagnóstico de Hardware ---
+# --- 8. Diagnóstico, Benchmark e Monitoramento de Hardware ---
 Write-Host ""
-Write-Host "[+] Instalando Ferramentas de Diagnóstico de Hardware..." -ForegroundColor Cyan
+Write-Host "[+] Instalando Kit de Diagnóstico e Benchmark de Hardware..." -ForegroundColor Cyan
 choco install cpu-z
 choco install gpu-z
 choco install hwmonitor
+choco install crystaldiskinfo         # Saúde de SSD/HD (S.M.A.R.T.)
+choco install crystaldiskmark         # Benchmark de velocidade de disco
+choco install speccy                  # Sumário detalhado do sistema
+choco install msi-afterburner         # Monitoramento de FPS e Overclocking
+choco install prime95                 # Teste de estresse de CPU
 
 # --- 9. Produtividade e Comunicação ---
 Write-Host ""
 Write-Host "[+] Instalando Ferramentas de Comunicação..." -ForegroundColor Cyan
 choco install discord
 
-# --- 10. CIBERSEGURANÇA E PENTESTING (Host) ---
+# --- 10. DevOps e Ferramentas de Nuvem (Cloud) ---
+Write-Host ""
+Write-Host "[+] Instalando Ferramentas de DevOps e Cloud..." -ForegroundColor Cyan
+choco install aws-cli
+choco install azure-cli
+choco install terraform
+
+# --- 11. Utilitários Avançados e Segurança Pessoal ---
+Write-Host ""
+Write-Host "[+] Instalando Utilitários Avançados e Segurança..." -ForegroundColor Cyan
+choco install keepassxc             # Gerenciador de senhas local
+choco install windirstat            # Analisador gráfico de espaço em disco
+choco install winscp                # Cliente gráfico SFTP/FTP
+
+# --- 12. CIBERSEGURANÇA E PENTESTING (Host) ---
 Write-Host ""
 Write-Host "[+] Instalando Arsenal de Cibersegurança e Pentesting..." -ForegroundColor Magenta
 
-# 10.1. Análise de Rede
+# 12.1. Análise de Rede
 Write-Host "  -> Análise de Rede..." -ForegroundColor Magenta
 choco install nmap
 choco install wireshark
 choco install zenmap
 
-# 10.2. Análise de Aplicações Web
+# 12.2. Análise de Aplicações Web
 Write-Host "  -> Análise Web..." -ForegroundColor Magenta
 choco install burpsuite
 choco install sqlmap
 choco install owasp-zap
 
-# 10.3. Engenharia Reversa e Forense
+# 12.3. Engenharia Reversa e Forense
 Write-Host "  -> Engenharia Reversa e Forense..." -ForegroundColor Magenta
 choco install ghidra
 choco install x64dbg
@@ -113,28 +132,31 @@ choco install sysinternals
 choco install hashcat
 choco install autopsy
 
-# 10.4. Exploração e Frameworks
+# 12.4. Exploração e Frameworks
 Write-Host "  -> Frameworks de Exploração..." -ForegroundColor Magenta
 choco install metasploit-framework
 choco install putty
 
-# --- 11. DEPENDÊNCIAS ESSENCIAIS (Runtimes) ---
+# --- 13. DEPENDÊNCIAS ESSENCIAIS (Runtimes) ---
 Write-Host ""
 Write-Host "[+] Instalando Runtimes e Dependências Essenciais..." -ForegroundColor Yellow
 
-# 11.1. Visual C++ Redistributables (Equivalente ao All-in-One)
+# 13.1. Visual C++ Redistributables (Equivalente ao All-in-One)
 Write-Host "  -> Instalando todos os Runtimes do Visual C++ (2005-2022)..." -ForegroundColor Yellow
 choco install vcredist-all
 
-# 11.2. .NET Frameworks Legados (o .NET SDK moderno já está na seção 3)
+# 13.2. .NET Frameworks Legados (o .NET SDK moderno já está na seção 3)
 Write-Host "  -> Instalando .NET Frameworks legados (3.5 e 4.x)..." -ForegroundColor Yellow
 choco install dotnet3.5
 choco install dotnetfx
 
-# 11.3. Java Runtime (JRE)
+# 13.3. Java Runtime (JRE)
 Write-Host "  -> Instalando Java Runtime Environment 8 (JRE)..." -ForegroundColor Yellow
 choco install jre8
 
+# 13.4. DirectX Legado
+Write-Host "  -> Instalando DirectX 9.0c End-User Runtime..." -ForegroundColor Yellow
+choco install directx
 
 # --- Finalização ---
 Write-Host ""

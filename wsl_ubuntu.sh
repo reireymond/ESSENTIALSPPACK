@@ -2,11 +2,11 @@
 
 # =============================================================================
 #
-#  Script de Setup para WSL (Ubuntu) - Versão 1.1
+#  Script de Setup para WSL (Ubuntu) - Versão 1.2
 #
 #  Instala o ambiente de desenvolvimento C/C++ (build-essential),
 #  um conjunto de ferramentas de pentesting (baseado no Kali),
-#  utilitários de terminal (QoL)
+#  utilitários de terminal (QoL) e ferramentas DevOps (kubectl)
 #  e melhora o terminal com Zsh + Oh My Zsh.
 #
 #  COMO USAR:
@@ -41,7 +41,8 @@ echo "=========================================="
 echo "  Instalando Utilitários de Terminal (QoL)"
 echo "=========================================="
 # tmux (multiplexador), htop (monitor), bat (cat com cores), exa (ls moderno)
-sudo apt install -y tmux htop bat exa
+# tldr (resumo de manuais)
+sudo apt install -y tmux htop bat exa tldr
 
 # Corrige o nome do comando 'bat' no Ubuntu (batcat -> bat)
 # Remove o link se já existir (para evitar erro) e cria o novo
@@ -52,13 +53,15 @@ echo "=========================================="
 echo "  Instalando Ferramentas de Rede e Enumeração"
 echo "=========================================="
 # net-tools (para ifconfig, etc.), smbclient (pentest Windows)
-sudo apt install -y net-tools smbclient enum4linux nbtscan onesixtyone
+# masscan (scanner de porta ultra-rápido)
+sudo apt install -y net-tools smbclient enum4linux nbtscan onesixtyone masscan
 
 echo "=========================================="
 echo "  Instalando Ferramentas de Análise Web"
 echo "=========================================="
 # gobuster (brute-force de diretórios), nikto (scanner de vulnerabilidades)
-sudo apt install -y gobuster dirb nikto whatweb
+# ffuf (fuzzer web rápido)
+sudo apt install -y gobuster dirb nikto whatweb ffuf
 
 echo "=========================================="
 echo "  Instalando Ferramentas de Senha e Wordlists"
@@ -68,11 +71,20 @@ echo "=========================================="
 sudo apt install -y john hashid seclists hydra
 
 echo "=========================================="
-echo "  Instalando Ferramentas de Exploração e Análise Reversa"
+echo "  Instalando Ferramentas de Exploração, RE e Forense"
 echo "=========================================="
 # searchsploit (banco de dados do Exploit-DB)
 # binwalk (análise de firmware e arquivos)
-sudo apt install -y searchsploit exploitdb binwalk
+# radare2 (engenharia reversa)
+# foremost (forense, file carving)
+sudo apt install -y searchsploit exploitdb binwalk radare2 foremost
+
+echo "=========================================="
+echo "  Instalando Ferramentas DevOps (Kubernetes)"
+echo "=========================================="
+# kubectl (gerenciador de cluster Kubernetes)
+# Instala via snap, que é o método recomendado no Ubuntu
+sudo snap install kubectl --classic
 
 echo "=========================================="
 echo "  Instalando Zsh + Oh My Zsh (Melhoria do Terminal)"
