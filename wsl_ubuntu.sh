@@ -2,16 +2,17 @@
 
 # =============================================================================
 #
-#  Script de Setup para WSL (Ubuntu)
+#  Script de Setup para WSL (Ubuntu) - Versão 1.1
 #
 #  Instala o ambiente de desenvolvimento C/C++ (build-essential),
-#  um conjunto de ferramentas de pentesting (baseado no Kali)
+#  um conjunto de ferramentas de pentesting (baseado no Kali),
+#  utilitários de terminal (QoL)
 #  e melhora o terminal com Zsh + Oh My Zsh.
 #
 #  COMO USAR:
-#  1. Salve este arquivo (ex: meu_setup_wsl.sh)
-#  2. Dê permissão de execução:  chmod +x meu_setup_wsl.sh
-#  3. Execute o script:          ./meu_setup_wsl.sh
+#  1. Salve este arquivo (ex: wsl_ubuntu.sh)
+#  2. Dê permissão de execução:  chmod +x wsl_ubuntu.sh
+#  3. Execute o script:          ./wsl_ubuntu.sh
 #
 # =============================================================================
 
@@ -28,12 +29,24 @@ sudo apt update
 sudo apt upgrade -y
 
 echo "=========================================="
-echo "  Instalando Pacote de Desenvolvimento (C/C++, Java, Python)"
+echo "  Instalando Pacote de Desenvolvimento (C/C++, Java, Python, Shell)"
 echo "=========================================="
 # build-essential inclui: gcc, g++, make
 sudo apt install -y build-essential gdb valgrind binutils
 sudo apt install -y default-jdk      # Java (JDK)
 sudo apt install -y python3-pip python3-venv # Python
+sudo apt install -y shellcheck       # Verificador de scripts Shell
+
+echo "=========================================="
+echo "  Instalando Utilitários de Terminal (QoL)"
+echo "=========================================="
+# tmux (multiplexador), htop (monitor), bat (cat com cores), exa (ls moderno)
+sudo apt install -y tmux htop bat exa
+
+# Corrige o nome do comando 'bat' no Ubuntu (batcat -> bat)
+# Remove o link se já existir (para evitar erro) e cria o novo
+sudo rm -f /usr/bin/bat
+sudo ln -s /usr/bin/batcat /usr/bin/bat
 
 echo "=========================================="
 echo "  Instalando Ferramentas de Rede e Enumeração"
@@ -51,13 +64,15 @@ echo "=========================================="
 echo "  Instalando Ferramentas de Senha e Wordlists"
 echo "=========================================="
 # john the ripper, hashid (identifica hash), seclists (MELHORES wordlists)
-sudo apt install -y john hashid seclists
+# hydra (brute-force de serviços)
+sudo apt install -y john hashid seclists hydra
 
 echo "=========================================="
-echo "  Instalando Ferramentas de Exploração"
+echo "  Instalando Ferramentas de Exploração e Análise Reversa"
 echo "=========================================="
 # searchsploit (banco de dados do Exploit-DB)
-sudo apt install -y searchsploit exploitdb
+# binwalk (análise de firmware e arquivos)
+sudo apt install -y searchsploit exploitdb binwalk
 
 echo "=========================================="
 echo "  Instalando Zsh + Oh My Zsh (Melhoria do Terminal)"
