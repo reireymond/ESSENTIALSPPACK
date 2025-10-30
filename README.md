@@ -1,3 +1,7 @@
+# Essential's Programming Pack - Scripts de Setup de Ambiente
+
+Este repositório contém um conjunto de scripts para automatizar a configuração de um ambiente de desenvolvimento e cibersegurança em máquinas Windows, com foco na integração com o WSL 2 (Ubuntu).
+
 ## 🚀 O que ele faz?
 
 Este projeto instala e configura automaticamente:
@@ -22,3 +26,52 @@ Este projeto instala e configura automaticamente:
     * **RE & Forense:** `radare2`, `binwalk`, `foremost`.
     * **QoL do Terminal:** `tmux`, `htop`, `bat`, `exa`, `tldr`, `shellcheck`.
     * **Melhoria de Shell:** Zsh + Oh My Zsh com plugins de auto-sugestão e syntax highlighting.
+
+---
+
+## 📋 Pré-requisitos
+
+1.  Windows 10 ou 11.
+2.  **WSL 2 instalado:**
+    * Abra o PowerShell como Administrador e rode: `wsl --install`
+    * Reinicie o computador.
+
+---
+
+## ⚙️ Como Usar
+
+### 1. Setup do Windows
+
+1.  Clone este repositório:
+    ```bash
+    git clone [https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git](https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git)
+    ```
+2.  Navegue até a pasta:
+    ```powershell
+    cd SEU-REPOSITORIO
+    ```
+3.  Execute o script mestre **como Administrador**:
+    * Clique com o botão direito em `setup_windows.ps1` e escolha "Executar com PowerShell".
+    * *OU*, no terminal Admin, execute: `.\setup_windows.ps1`
+
+O script cuidará da instalação do Chocolatey e de todas as ferramentas do Windows.
+
+### 2. Setup do WSL (Ubuntu)
+
+1.  Abra seu terminal **Ubuntu**.
+2.  Navegue até a pasta do repositório (ela é montada automaticamente):
+    ```bash
+    # Exemplo de caminho (ajuste para o seu):
+    cd /mnt/c/Users/SeuUsuario/caminho/para/SEU-REPOSITORIO
+    ```
+3.  Dê permissão de execução ao script:
+    ```bash
+    chmod +x wsl_ubuntu.sh
+    ```
+4.  Execute o script:
+    ```bash
+    ./wsl_ubuntu.sh
+    ```
+5.  **Feche e reabra** o terminal Ubuntu para que o novo shell Zsh seja carregado.
+
+Pronto! Seu ambiente completo está configurado.
