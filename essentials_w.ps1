@@ -7,7 +7,7 @@
     ferramentas de build, um conjunto de ferramentas de pentesting,
     diagnóstico de hardware e todos os runtimes essenciais do Windows.
 .NOTES
-    Versão: 1.5
+    Versão: 1.6
     Autor: Kaua
     REQUISITO: Execute este script como ADMINISTRADOR.
     REQUISITO: Instale o Chocolatey primeiro!
@@ -104,6 +104,7 @@ choco install terraform
 # --- 11. Utilitários Avançados e Segurança Pessoal ---
 Write-Host ""
 Write-Host "[+] Instalando Utilitários Avançados e Segurança..." -ForegroundColor Cyan
+choco install gsudo                   # *** NOVA ADIÇÃO: Alternativa 'sudo' para Windows ***
 choco install keepassxc             # Gerenciador de senhas local
 choco install windirstat            # Analisador gráfico de espaço em disco
 choco install winscp                # Cliente gráfico SFTP/FTP
@@ -164,6 +165,6 @@ Write-Host "=================================================" -ForegroundColor 
 Write-Host "  SCRIPT DO WINDOWS CONCLUÍDO!" -ForegroundColor Green
 Write-Host "================================================="
 Write-Host "Reinicie seu terminal para que as alterações de PATH tenham efeito." -ForegroundColor Yellow
-Write-Host "Pode ser necessário REINICIAR O COMPUTADOR para que todos os"
+Write-Host "Pode ser necessário REINCIAR O COMPUTADOR para que todos os"
 Write-Host "runtimes (VC++ e .NET) sejam corretamente registrados." -ForegroundColor Yellow
 Write-Host "Próximo passo: Execute o script 'wsl_ubuntu.sh' dentro do Ubuntu." -ForegroundColor Cyan

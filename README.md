@@ -51,8 +51,8 @@ Este projeto instala e configura automaticamente:
     cd ESSENTIALSPPACK
     ```
 3.  Execute o script mestre **como Administrador**:
-    * Clique com o botão direito em `setup_windows.ps1` e escolha "Executar com PowerShell".
-    * *OU*, no terminal Admin, execute: `.\setup_windows.ps1`
+    * Clique com o botão direito em `setup_windows_pp.ps1` e escolha "Executar com PowerShell".
+    * *OU*, no terminal Admin, execute: `.\setup_windows_pp.ps1`
 
 O script cuidará da instalação do Chocolatey e de todas as ferramentas do Windows.
 
