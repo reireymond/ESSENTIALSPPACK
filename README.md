@@ -44,7 +44,7 @@ Este projeto instala e configura automaticamente:
 
 1.  Clone este repositório:
     ```bash
-    git clone [https://github.com/reireymond/ESSENTIALSPPACK.git](https://github.com/reireymond/ESSENTIALSPPACK.git)
+    git clone https://github.com/reireymond/ESSENTIALSPPACK.git
     ```
 2.  Navegue até a pasta:
     ```powershell
