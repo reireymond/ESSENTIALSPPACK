@@ -52,12 +52,12 @@ The entire process is automated by a single master script.
     cd ESSENTIALSPPACK
     ```
 3.  Run the master script **as Administrator**:
-    * Right-click `main_setup.ps1` and choose "Run with PowerShell".
-    * *OR*, in an Admin terminal, run: `.\main_setup.ps1`
+    * Right-click `setup.ps1` and choose "Run with PowerShell".
+    * *OR*, in an Admin terminal, run: `.\setup.ps1`
 
 **What will happen:**
 
-1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `main_setup.ps1` again.
+1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `setup.ps1` again.
 2.  It will install/verify **Chocolatey**.
 3.  It will install/upgrade **all 70+ Windows tools**.
 4.  At the end, it will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted.
