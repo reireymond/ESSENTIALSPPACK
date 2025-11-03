@@ -4,9 +4,10 @@
 .DESCRIPTION
     1. Garante privilégios de Administrador.
     2. Instala o Chocolatey (se não estiver instalado).
-    3. Executa o script principal 'essentials_w.ps1' para instalar as ferramentas.
+    3. Habilita a autoconfirmação de scripts do Chocolatey.
+    4. Executa o script principal 'essentials_w.ps1' para instalar as ferramentas.
 .NOTES
-    Versão: 1.0
+    Versão: 1.1
     Autor: Kaua
 #>
 
@@ -44,7 +45,17 @@ if ($null -eq $chocoPath) {
     Write-Host "Chocolatey já está instalado." -ForegroundColor Green
 }
 
-# --- 3. Execução do Script Principal ---
+# --- 3. Habilitando Autoconfirmação do Chocolatey (NOVA SEÇÃO) ---
+Write-Host "Habilitando a confirmação automática de scripts do Chocolatey (modo 100% automatizado)..." -ForegroundColor Yellow
+try {
+    # Este comando impede que o Choco pergunte "[Y]es/[A]ll/[N]o" para cada script
+    choco feature enable -n=allowGlobalConfirmation
+    Write-Host "Recurso 'allowGlobalConfirmation' habilitado." -ForegroundColor Green
+} catch {
+    Write-Host "ERRO: Falha ao habilitar 'allowGlobalConfirmation'. O script pode pedir confirmações." -ForegroundColor Red
+}
+
+# --- 4. Execução do Script Principal ---
 Write-Host "Iniciando o script principal de instalação de ferramentas (essentials_w.ps1)..."
 $scriptPath = Join-Path $PSScriptRoot "essentials_w.ps1"
 
