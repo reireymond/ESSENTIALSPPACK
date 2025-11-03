@@ -45,19 +45,19 @@ The entire process is automated by a single master script.
 
 1.  Clone this repository:
     ```bash
-    git clone [https://github.com/YOUR-USER/YOUR-REPO.git](https://github.com/YOUR-USER/YOUR-REPO.git)
+    git clone https://github.com/reireymond/ESSENTIALSPPACK
     ```
 2.  Navigate into the folder:
     ```powershell
-    cd YOUR-REPO
+    cd ESSENTIALSPPACK
     ```
 3.  Run the master script **as Administrator**:
-    * Right-click `setup_windows.ps1` and choose "Run with PowerShell".
-    * *OR*, in an Admin terminal, run: `.\setup_windows.ps1`
+    * Right-click `main_setup.ps1` and choose "Run with PowerShell".
+    * *OR*, in an Admin terminal, run: `.\main_setup.ps1`
 
 **What will happen:**
 
-1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `setup_windows.ps1` again.
+1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `main_setup.ps1` again.
 2.  It will install/verify **Chocolatey**.
 3.  It will install/upgrade **all 70+ Windows tools**.
 4.  At the end, it will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted.
