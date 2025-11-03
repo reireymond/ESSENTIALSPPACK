@@ -1,77 +1,66 @@
-# Essential's Programming Pack - Scripts de Setup de Ambiente
+# Essential's Programming Pack - Environment Setup Scripts
 
-Este repositório contém um conjunto de scripts para automatizar a configuração de um ambiente de desenvolvimento e cibersegurança em máquinas Windows, com foco na integração com o WSL 2 (Ubuntu).
+This repository contains a set of scripts to automate the setup of a development and cybersecurity environment on Windows machines, with a focus on WSL 2 (Ubuntu) integration.
 
-## 🚀 O que ele faz?
+## 🚀 What does it do?
 
-Este projeto instala e configura automaticamente:
+This project automatically installs and configures:
 
-* **Ambiente Windows (via Chocolatey):**
-    * **Editores e IDEs:** VS Code, Visual Studio 2022 Community, Neovim.
-    * **Terminais:** Windows Terminal, PowerShell Core.
-    * **Linguagens:** Python 3, Node.js, OpenJDK 17, .NET SDK.
-    * **Ferramentas de Build:** Git, CMake, MSYS2.
-    * **Virtualização:** Docker Desktop, VirtualBox.
+* **Windows Environment (via Chocolatey):**
+    * **Editors & IDEs:** VS Code, Visual Studio 2022 Community, Neovim.
+    * **Terminals:** Windows Terminal, PowerShell Core.
+    * **Languages:** Python 3, Node.js, OpenJDK 17, .NET SDK.
+    * **Build Tools:** Git, CMake, MSYS2.
+    * **Virtualization:** Docker Desktop, VirtualBox.
     * **DevOps & Cloud:** AWS CLI, Azure CLI, Terraform.
-    * **Diagnóstico de Hardware:** CPU-Z, GPU-Z, HWMonitor, CrystalDiskInfo, CrystalDiskMark, Speccy.
-    * **Benchmark e Estresse:** Prime95, MSI Afterburner.
-    * **Ferramentas de Cibersegurança:** Nmap, Wireshark, Burp Suite, SQLMap, Ghidra, Autopsy, Metasploit, x64dbg, Sysinternals, Hashcat.
-    * **Utilitários:** 7-Zip, Postman, DBeaver, Firefox Developer Edition, Discord, KeePassXC, WinDirStat, WinSCP.
-    * **Runtimes Essenciais:** vcredist-all (VC++ 2005-2022), .NET 3.5, .NET 4.x, JRE8, DirectX 9.0c.
+    * **Hardware Diagnostics:** CPU-Z, GPU-Z, HWMonitor, CrystalDiskInfo, CrystalDiskMark, Speccy.
+    * **Benchmark & Stress:** Prime95, MSI Afterburner.
+    * **Cybersecurity Tools:** Nmap, Wireshark, Burp Suite, SQLMap, Ghidra, Autopsy, Metasploit, x64dbg, Sysinternals, Hashcat.
+    * **Utilities:** 7-Zip, Postman, DBeaver, Firefox Developer Edition, Discord, KeePassXC, WinDirStat, WinSCP, gsudo.
+    * **Essential Runtimes:** vcredist-all (VC++ 2005-2022), .NET 3.5, .NET 4.x, JRE8, DirectX 9.0c.
 
-* **Ambiente WSL (Ubuntu):**
-    * **Compiladores C/C++:** `build-essential` (GCC, G++, Make), GDB, Valgrind.
+* **WSL (Ubuntu) Environment:**
+    * **C/C++ Compilers:** `build-essential` (GCC, G++, Make), GDB, Valgrind.
     * **DevOps:** `kubectl` (Kubernetes).
-    * **Ferramentas de Pentesting:** `masscan`, `ffuf`, `hydra`, `gobuster`, `nikto`, `john`, `seclists`, `searchsploit`, `smbclient`.
-    * **RE & Forense:** `radare2`, `binwalk`, `foremost`.
-    * **QoL do Terminal:** `tmux`, `htop`, `bat`, `exa`, `tldr`, `shellcheck`.
-    * **Melhoria de Shell:** Zsh + Oh My Zsh com plugins de auto-sugestão e syntax highlighting.
+    * **Pentesting Tools:** `masscan`, `ffuf`, `hydra`, `gobuster`, `nikto`, `john`, `seclists`, `searchsploit`, `smbclient`.
+    * **RE & Forensics:** `radare2`, `binwalk`, `foremost`.
+    * **Terminal QoL:** `tmux`, `htop`, `bat`, `exa`, `tldr`, `shellcheck`.
+    * **Shell Upgrade:** Zsh + Oh My Zsh with auto-suggestion and syntax-highlighting plugins.
 
 ---
 
-## 📋 Pré-requisitos
+## 📋 Prerequisites
 
-1.  Windows 10 ou 11.
-2.  **WSL 2 instalado:**
-    * Abra o PowerShell como Administrador e rode: `wsl --install`
-    * Reinicie o computador.
+1.  Windows 10 or 11.
+2.  **WSL 2 Installed:**
+    * The main script handles this, but if you want to do it first:
+    * Open PowerShell as Administrator and run: `wsl --install`
+    * Reboot your computer.
 
 ---
 
-## ⚙️ Como Usar
+## ⚙️ How to Use
 
-### 1. Setup do Windows
+The entire process is automated by a single master script.
 
-1.  Clone este repositório:
+1.  Clone this repository:
     ```bash
-    git clone https://github.com/reireymond/ESSENTIALSPPACK.git
+    git clone [https://github.com/YOUR-USER/YOUR-REPO.git](https://github.com/YOUR-USER/YOUR-REPO.git)
     ```
-2.  Navegue até a pasta:
+2.  Navigate into the folder:
     ```powershell
-    cd ESSENTIALSPPACK
+    cd YOUR-REPO
     ```
-3.  Execute o script mestre **como Administrador**:
-    * Clique com o botão direito em `setup_windows_pp.ps1` e escolha "Executar com PowerShell".
-    * *OU*, no terminal Admin, execute: `.\setup_windows_pp.ps1`
+3.  Run the master script **as Administrator**:
+    * Right-click `setup_windows.ps1` and choose "Run with PowerShell".
+    * *OR*, in an Admin terminal, run: `.\setup_windows.ps1`
 
-O script cuidará da instalação do Chocolatey e de todas as ferramentas do Windows.
+**What will happen:**
 
-### 2. Setup do WSL (Ubuntu)
+1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `setup_windows.ps1` again.
+2.  It will install/verify **Chocolatey**.
+3.  It will install/upgrade **all 70+ Windows tools**.
+4.  At the end, it will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted.
+5.  **Close and reopen** your terminal at the very end.
 
-1.  Abra seu terminal **Ubuntu**.
-2.  Navegue até a pasta do repositório (ela é montada automaticamente):
-    ```bash
-    # Exemplo de caminho (ajuste para o seu):
-    cd /mnt/c/Users/SeuUsuario/caminho-para-repositorio/ESSENTIALSPPACK
-    ```
-3.  Dê permissão de execução ao script:
-    ```bash
-    chmod +x wsl_ubuntu.sh
-    ```
-4.  Execute o script:
-    ```bash
-    ./wsl_ubuntu.sh
-    ```
-5.  **Feche e reabra** o terminal Ubuntu para que o novo shell Zsh seja carregado.
-
-Pronto! Seu ambiente completo está configurado.
+Done! Your full environment is now configured.
