@@ -1,14 +1,14 @@
-# Arquivos do Windows
+# Windows system files
 Thumbs.db
 desktop.ini
 
-# Arquivos de IDEs e Editores
+# IDEs and Editor files
 .vscode/
 .idea/
 
-# Arquivos de Log do PowerShell
+# PowerShell Log files
 *.log
 
-# Arquivos gerados pelo Python
+# Python generated files
 __pycache__/
 *.pyc
