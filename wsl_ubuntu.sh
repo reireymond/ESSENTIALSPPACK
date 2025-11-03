@@ -2,18 +2,13 @@
 
 # =============================================================================
 #
-#  Setup Script for WSL (Ubuntu) - Version 1.5 (Definitive Edition)
+#  Setup Script for WSL (Ubuntu) - Version 1.6 (Final Robust Edition)
 #
 #  Installs the C/C++ development environment (build-essential),
 #  a suite of pentesting tools (Kali-like),
 #  terminal QoL utilities, DevOps tools (kubectl),
 #  enhances the terminal with Zsh + Oh My Zsh,
-#  and applies custom aliases.
-#
-#  HOW TO USE (Manual):
-#  1. Save this file (e.g., wsl_ubuntu.sh)
-#  2. Give execute permission:  chmod +x wsl_ubuntu.sh
-#  3. Run the script:          ./wsl_ubuntu.sh
+#  and applies custom aliases idempotently.
 #
 # =============================================================================
 
@@ -33,7 +28,7 @@ echo "=========================================="
 echo "  Installing Development Pack (C/C++, Java, Python, Shell)"
 echo "=========================================="
 # build-essential includes: gcc, g++, make
-sudo apt install -y build-essential gdb valgind binutils
+sudo apt install -y build-essential gdb valgrind binutils
 sudo apt install -y default-jdk      # Java (JDK)
 sudo apt install -y python3-pip python3-venv # Python
 sudo apt install -y shellcheck       # Shell script linter
@@ -94,32 +89,56 @@ echo "=========================================="
 # Install Zsh
 sudo apt install -y zsh
 
-# Install Oh My Zsh non-interactively
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+# Set Zsh as the default shell for the user (if not already set)
+# $SUDO_USER is the user who *ran* sudo
+if [ "$(getent passwd $SUDO_USER | cut -d: -f7)" != "$(which zsh)" ]; then
+    echo "Setting Zsh as default shell for $SUDO_USER..."
+    sudo chsh -s $(which zsh) $SUDO_USER
+else
+    echo "Zsh is already the default shell."
+fi
 
-# Set Zsh as the default shell for the current user
-sudo chsh -s $(which zsh) $USER
+# Set path for Zsh config
+ZSHRC_PATH="/home/${SUDO_USER}/.zshrc"
+
+# Install Oh My Zsh non-interactively
+if [ ! -d "/home/${SUDO_USER}/.oh-my-zsh" ]; then
+    echo "Installing Oh My Zsh..."
+    # Run as the regular user, not as root
+    sudo -u $SUDO_USER sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+else
+    echo "Oh My Zsh is already installed. Skipping."
+fi
 
 echo "Installing Zsh plugins (autosuggestions and syntax-highlighting)..."
-# Clone plugins
-ZSH_CUSTOM_PLUGINS=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins
-git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM_PLUGINS/zsh-autosuggestions
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM_PLUGINS/zsh-syntax-highlighting
+ZSH_CUSTOM_PLUGINS="/home/${SUDO_USER}/.oh-my-zsh/custom/plugins"
+if [ ! -d "$ZSH_CUSTOM_PLUGINS/zsh-autosuggestions" ]; then
+    sudo -u $SUDO_USER git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM_PLUGINS/zsh-autosuggestions
+fi
+if [ ! -d "$ZSH_CUSTOM_PLUGINS/zsh-syntax-highlighting" ]; then
+    sudo -u $SUDO_USER git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM_PLUGINS/zsh-syntax-highlighting
+fi
 
-# Automatically enable plugins in .zshrc
-# This finds the line 'plugins=(git)' and replaces it
-sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
+# Robustly enable plugins in .zshrc
+if grep -q "plugins=(git)" "$ZSHRC_PATH"; then
+    echo "Enabling Zsh plugins..."
+    sudo -u $SUDO_USER sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' "$ZSHRC_PATH"
+else
+    echo "Could not find default 'plugins=(git)' line. Plugins must be added manually."
+fi
 
-# --- ADDING CUSTOM ALIASES (NEW SECTION) ---
+# --- ADDING CUSTOM ALIASES (Idempotent) ---
 echo "=========================================="
 echo "  Applying custom Zsh aliases..."
 echo "=========================================="
-# Appends custom aliases to the end of .zshrc
-# We must use 'sudo' here because this script is run as root
-# and we need to write to the regular user's ($SUDO_USER) home directory.
-ZSHRC_PATH="/home/${SUDO_USER}/.zshrc"
 
-echo '
+ALIAS_MARKER="# --- Custom Aliases ---"
+
+if ! grep -q "$ALIAS_MARKER" "$ZSHRC_PATH"; then
+    echo "Adding custom aliases to $ZSHRC_PATH..."
+    # Appends custom aliases to the end of .zshrc
+    # We use 'tee -a' to append as the user, not as root
+    echo '
 # --- Custom Aliases ---
 alias ll="ls -alF"
 alias la="ls -A"
@@ -127,10 +146,11 @@ alias l="ls -CF"
 alias update="sudo apt update && sudo apt upgrade -y"
 alias cleanup="sudo apt autoremove -y && sudo apt clean"
 alias open="explorer.exe ."
-' >> $ZSHRC_PATH
+' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
+else
+    echo "Custom aliases already found in $ZSHRC_PATH. Skipping."
+fi
 
-# Ensure the .zshrc file is owned by the user, not root
-sudo chown $SUDO_USER:$SUDO_USER $ZSHRC_PATH
 
 # --- APT CLEANUP ---
 echo "=========================================="
