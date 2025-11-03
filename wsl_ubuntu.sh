@@ -2,117 +2,117 @@
 
 # =============================================================================
 #
-#  Script de Setup para WSL (Ubuntu) - Versão 1.2
+#  Setup Script for WSL (Ubuntu) - Version 1.3 (Translated)
 #
-#  Instala o ambiente de desenvolvimento C/C++ (build-essential),
-#  um conjunto de ferramentas de pentesting (baseado no Kali),
-#  utilitários de terminal (QoL) e ferramentas DevOps (kubectl)
-#  e melhora o terminal com Zsh + Oh My Zsh.
+#  Installs the C/C++ development environment (build-essential),
+#  a suite of pentesting tools (Kali-like),
+#  terminal QoL utilities, DevOps tools (kubectl),
+#  and enhances the terminal with Zsh + Oh My Zsh.
 #
-#  COMO USAR:
-#  1. Salve este arquivo (ex: wsl_ubuntu.sh)
-#  2. Dê permissão de execução:  chmod +x wsl_ubuntu.sh
-#  3. Execute o script:          ./wsl_ubuntu.sh
+#  HOW TO USE (Manual):
+#  1. Save this file (e.g., wsl_ubuntu.sh)
+#  2. Give execute permission:  chmod +x wsl_ubuntu.sh
+#  3. Run the script:          ./wsl_ubuntu.sh
 #
 # =============================================================================
 
-# Pede privilégios de administrador (sudo) logo no início
+# Request administrator (sudo) privileges at the start
 sudo -v
 
-# Garante que o script continue rodando com sudo
+# Keep sudo privileges alive throughout the script
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 echo "=========================================="
-echo "  Atualizando o Sistema (apt update/upgrade)..."
+echo "  Updating System (apt update/upgrade)..."
 echo "=========================================="
 sudo apt update
 sudo apt upgrade -y
 
 echo "=========================================="
-echo "  Instalando Pacote de Desenvolvimento (C/C++, Java, Python, Shell)"
+echo "  Installing Development Pack (C/C++, Java, Python, Shell)"
 echo "=========================================="
-# build-essential inclui: gcc, g++, make
+# build-essential includes: gcc, g++, make
 sudo apt install -y build-essential gdb valgrind binutils
 sudo apt install -y default-jdk      # Java (JDK)
 sudo apt install -y python3-pip python3-venv # Python
-sudo apt install -y shellcheck       # Verificador de scripts Shell
+sudo apt install -y shellcheck       # Shell script linter
 
 echo "=========================================="
-echo "  Instalando Utilitários de Terminal (QoL)"
+echo "  Installing Terminal QoL (Quality of Life) Utilities"
 echo "=========================================="
-# tmux (multiplexador), htop (monitor), bat (cat com cores), exa (ls moderno)
-# tldr (resumo de manuais)
+# tmux (multiplexer), htop (monitor), bat (cat w/ colors), exa (modern ls)
+# tldr (simplified man pages)
 sudo apt install -y tmux htop bat exa tldr
 
-# Corrige o nome do comando 'bat' no Ubuntu (batcat -> bat)
-# Remove o link se já existir (para evitar erro) e cria o novo
+# Fix 'bat' command name on Ubuntu (batcat -> bat)
+# Remove link if it exists (to prevent error) and create the new one
 sudo rm -f /usr/bin/bat
 sudo ln -s /usr/bin/batcat /usr/bin/bat
 
 echo "=========================================="
-echo "  Instalando Ferramentas de Rede e Enumeração"
+echo "  Installing Network & Enumeration Tools"
 echo "=========================================="
-# net-tools (para ifconfig, etc.), smbclient (pentest Windows)
-# masscan (scanner de porta ultra-rápido)
+# net-tools (for ifconfig, etc.), smbclient (Windows pentest)
+# masscan (ultra-fast port scanner)
 sudo apt install -y net-tools smbclient enum4linux nbtscan onesixtyone masscan
 
 echo "=========================================="
-echo "  Instalando Ferramentas de Análise Web"
+echo "  Installing Web Analysis Tools"
 echo "=========================================="
-# gobuster (brute-force de diretórios), nikto (scanner de vulnerabilidades)
-# ffuf (fuzzer web rápido)
+# gobuster (directory brute-force), nikto (vulnerability scanner)
+# ffuf (fast web fuzzer)
 sudo apt install -y gobuster dirb nikto whatweb ffuf
 
 echo "=========================================="
-echo "  Instalando Ferramentas de Senha e Wordlists"
+echo "  Installing Password Tools & Wordlists"
 echo "=========================================="
-# john the ripper, hashid (identifica hash), seclists (MELHORES wordlists)
-# hydra (brute-force de serviços)
+# john the ripper, hashid (hash identifier), seclists (BEST wordlists)
+# hydra (service brute-forcer)
 sudo apt install -y john hashid seclists hydra
 
 echo "=========================================="
-echo "  Instalando Ferramentas de Exploração, RE e Forense"
+echo "  Installing Exploit, RE & Forensics Tools"
 echo "=========================================="
-# searchsploit (banco de dados do Exploit-DB)
-# binwalk (análise de firmware e arquivos)
-# radare2 (engenharia reversa)
-# foremost (forense, file carving)
+# searchsploit (Exploit-DB offline database)
+# binwalk (firmware & file analysis)
+# radare2 (reverse engineering)
+# foremost (forensics, file carving)
 sudo apt install -y searchsploit exploitdb binwalk radare2 foremost
 
 echo "=========================================="
-echo "  Instalando Ferramentas DevOps (Kubernetes)"
+echo "  Installing DevOps Tools (Kubernetes)"
 echo "=========================================="
-# kubectl (gerenciador de cluster Kubernetes)
-# Instala via snap, que é o método recomendado no Ubuntu
+# kubectl (Kubernetes cluster manager)
+# Install via snap, the recommended method on Ubuntu
 sudo snap install kubectl --classic
 
 echo "=========================================="
-echo "  Instalando Zsh + Oh My Zsh (Melhoria do Terminal)"
+echo "  Installing Zsh + Oh My Zsh (Terminal Upgrade)"
 echo "=========================================="
 
-# Instala o Zsh
+# Install Zsh
 sudo apt install -y zsh
 
-# Instala o Oh My Zsh sem interação manual
+# Install Oh My Zsh non-interactively
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 
-# Define o Zsh como shell padrão (para o usuário atual)
+# Set Zsh as the default shell for the current user
 sudo chsh -s $(which zsh) $USER
 
-echo "Instalando plugins Zsh (autosuggestions e syntax-highlighting)..."
-# Clona os plugins
+echo "Installing Zsh plugins (autosuggestions and syntax-highlighting)..."
+# Clone plugins
 ZSH_CUSTOM_PLUGINS=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins
 git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM_PLUGINS/zsh-autosuggestions
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM_PLUGINS/zsh-syntax-highlighting
 
-# Ativa os plugins automaticamente no arquivo .zshrc
-# Isso encontra a linha 'plugins=(git)' e a substitui
+# Automatically enable plugins in .zshrc
+# This finds the line 'plugins=(git)' and replaces it
 sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
 
 echo "=========================================="
-echo "  SETUP DO WSL (UBUNTU) CONCLUÍDO!"
+echo "  WSL (UBUNTU) SETUP COMPLETE!"
 echo "=========================================="
 echo ""
-echo -e "\033[1;33mIMPORTANTE:\033[0m"
-echo "Feche e reabra seu terminal Ubuntu para que o Zsh (novo shell) seja carregado corretamente."
+echo -e "\033[1;33mIMPORTANT:\033[0m"
+echo "Please close and reopen your Ubuntu terminal for Zsh (the new shell) to load correctly."
 echo ""
