@@ -2,12 +2,13 @@
 
 # =============================================================================
 #
-#  Setup Script for WSL (Ubuntu) - Version 1.4 (Added Cleanup)
+#  Setup Script for WSL (Ubuntu) - Version 1.5 (Definitive Edition)
 #
 #  Installs the C/C++ development environment (build-essential),
 #  a suite of pentesting tools (Kali-like),
 #  terminal QoL utilities, DevOps tools (kubectl),
-#  and enhances the terminal with Zsh + Oh My Zsh.
+#  enhances the terminal with Zsh + Oh My Zsh,
+#  and applies custom aliases.
 #
 #  HOW TO USE (Manual):
 #  1. Save this file (e.g., wsl_ubuntu.sh)
@@ -32,7 +33,7 @@ echo "=========================================="
 echo "  Installing Development Pack (C/C++, Java, Python, Shell)"
 echo "=========================================="
 # build-essential includes: gcc, g++, make
-sudo apt install -y build-essential gdb valgrind binutils
+sudo apt install -y build-essential gdb valgind binutils
 sudo apt install -y default-jdk      # Java (JDK)
 sudo apt install -y python3-pip python3-venv # Python
 sudo apt install -y shellcheck       # Shell script linter
@@ -109,7 +110,29 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM_P
 # This finds the line 'plugins=(git)' and replaces it
 sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
 
-# --- APT CLEANUP (NEW SECTION) ---
+# --- ADDING CUSTOM ALIASES (NEW SECTION) ---
+echo "=========================================="
+echo "  Applying custom Zsh aliases..."
+echo "=========================================="
+# Appends custom aliases to the end of .zshrc
+# We must use 'sudo' here because this script is run as root
+# and we need to write to the regular user's ($SUDO_USER) home directory.
+ZSHRC_PATH="/home/${SUDO_USER}/.zshrc"
+
+echo '
+# --- Custom Aliases ---
+alias ll="ls -alF"
+alias la="ls -A"
+alias l="ls -CF"
+alias update="sudo apt update && sudo apt upgrade -y"
+alias cleanup="sudo apt autoremove -y && sudo apt clean"
+alias open="explorer.exe ."
+' >> $ZSHRC_PATH
+
+# Ensure the .zshrc file is owned by the user, not root
+sudo chown $SUDO_USER:$SUDO_USER $ZSHRC_PATH
+
+# --- APT CLEANUP ---
 echo "=========================================="
 echo "  Cleaning up APT cache and unused packages..."
 echo "=========================================="
@@ -121,5 +144,5 @@ echo "  WSL (UBUNTU) SETUP COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
-echo "Please close and reopen your Ubuntu terminal for Zsh (the new shell) to load correctly."
+echo "Please close and reopen your Ubuntu terminal for Zsh (the new shell) and new aliases to load correctly."
 echo ""
