@@ -12,13 +12,32 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 1.8 (Smart Reboot Logic)
+    Version: 1.9 (Final Robust Edition)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
 
-# --- 0. Global Variables ---
+# --- 0. Helper Functions & Global Variables ---
 $Global:RebootIsNeeded = $false # We will track if a reboot is needed
+
+# Robust function to check for any pending reboots (Registry or WU)
+function Test-RebootRequired {
+    # Check Windows Update Module first
+    try {
+        if (Test-PendingReboot -ErrorAction SilentlyContinue) { return $true }
+    } catch {}
+    
+    # Check common registry keys
+    $RegKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired",
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending",
+        "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
+    )
+    if (Get-ItemProperty -Path $RegKeys -Name "PendingFileRenameOperations" -ErrorAction SilentlyContinue) {
+        return $true
+    }
+    return $false
+}
 
 # --- 1. Administrator Check ---
 Write-Host "Checking for Administrator privileges..." -ForegroundColor Yellow
@@ -140,7 +159,6 @@ choco upgrade discord
 Write-Host "[+] Upgrading DevOps & Cloud Tools..." -ForegroundColor Cyan
 choco upgrade aws-cli; choco upgrade azure-cli; choco upgrade terraform
 
-Monitor
 # 5.11: Advanced Utilities & Personal Security
 Write-Host "[+] Upgrading Advanced Utilities & Security..." -ForegroundColor Cyan
 choco upgrade gsudo; choco upgrade keepassxc; choco upgrade windirstat; choco upgrade winscp
@@ -160,34 +178,40 @@ Write-Host "================================================="
 Write-Host ""
 
 
-# --- 6. INSTALLING VS CODE EXTENSIONS ---
+# --- 6. INSTALLING VS CODE EXTENSIONS (Robust Check) ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host "  INSTALLING VS CODE EXTENSIONS..." -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
-Write-Host "[+] Installing extensions for Git, Icons, and General Coding..." -ForegroundColor Cyan
-code --install-extension pkief.material-icon-theme
-code --install-extension eamodio.gitlens
-code --install-extension formulahendry.code-runner
-code --install-extension visualstudioexptteam.vscodeintellicode
-code --install-extension github.copilot
 
-Write-Host "[+] Installing extensions for Web Development (HTML/CSS/JS)..." -ForegroundColor Cyan
-code --install-extension esbenp.prettier-vscode
-code --install-extension dbaeumer.vscode-eslint
-code --install-extension ritwickdey.liveserver
+if (Get-Command code -ErrorAction SilentlyContinue) {
+    Write-Host "[+] Installing extensions for Git, Icons, and General Coding..." -ForegroundColor Cyan
+    code --install-extension pkief.material-icon-theme --force
+    code --install-extension eamodio.gitlens --force
+    code --install-extension formulahendry.code-runner --force
+    code --install-extension visualstudioexptteam.vscodeintellicode --force
+    code --install-extension github.copilot --force
 
-Write-Host "[+] Installing extensions for C/C++, Python, Java, and WSL..." -ForegroundColor Cyan
-code --install-extension ms-vscode.cpptools
-code --install-extension ms-vscode.cmake-tools
-code --install-extension ms-python.python
-code --install-extension ms-python.vscode-pylance
-code --install-extension vscjava.vscode-java-pack
-code --install-extension ms-vscode-remote.remote-wsl
-code --install-extension ms-azuretools.vscode-docker
+    Write-Host "[+] Installing extensions for Web Development (HTML/CSS/JS)..." -ForegroundColor Cyan
+    code --install-extension esbenp.prettier-vscode --force
+    code --install-extension dbaeumer.vscode-eslint --force
+    code --install-extension ritwickdey.liveserver --force
 
-Write-Host "VS Code extensions installed." -ForegroundColor Green
+    Write-Host "[+] Installing extensions for C/C++, Python, Java, and WSL..." -ForegroundColor Cyan
+    code --install-extension ms-vscode.cpptools --force
+    code --install-extension ms-vscode.cmake-tools --force
+    code --install-extension ms-python.python --force
+    code --install-extension ms-python.vscode-pylance --force
+    code --install-extension vscjava.vscode-java-pack --force
+    code --install-extension ms-vscode-remote.remote-wsl --force
+    code --install-extension ms-azuretools.vscode-docker --force
+
+    Write-Host "VS Code extensions installed/updated." -ForegroundColor Green
+} else {
+    Write-Host "ERROR: 'code.exe' not found in PATH. Skipping VS Code extension install." -ForegroundColor Red
+    Write-Host "Please restart your terminal and run the script again if VS Code was just installed."
+}
 
 
 # --- 7. EXECUTING WSL SCRIPT (Automated Section) ---
@@ -243,10 +267,9 @@ try {
     Write-Host "This may take a long time..."
     
     # Install updates WITHOUT auto-rebooting
-    Install-WindowsUpdate -AcceptAll
+    Install-WindowsUpdate -AcceptAll -ErrorAction SilentlyContinue
     
-    # Check if a reboot is now pending
-    if (Test-PendingReboot) {
+    if (Test-RebootRequired) {
         $Global:RebootIsNeeded = $true
     }
     
@@ -265,8 +288,8 @@ Write-Host ""
 
 Write-Host "[+] Cleaning up Windows temporary files (User, System & Prefetch)..." -ForegroundColor Cyan
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:SystemRoot\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "[+] Optimizing main drive (C:)... (TRIM or Defrag)" -ForegroundColor Cyan
 Optimize-Volume -DriveLetter C -ErrorAction SilentlyContinue
@@ -281,8 +304,8 @@ Write-Host "  ENTIRE SETUP COMPLETE (WINDOWS + WSL)!" -ForegroundColor Green
 Write-Host "================================================="
 Write-Host ""
 
-# Check if runtimes (like .NET or VC++) also triggered a reboot
-if (Test-PendingReboot) {
+# Final robust check for reboot
+if (Test-RebootRequired) {
     $Global:RebootIsNeeded = $true
 }
 
