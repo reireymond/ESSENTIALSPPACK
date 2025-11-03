@@ -7,9 +7,10 @@
     3. Installs Chocolatey (if not installed).
     4. Enables Chocolatey's auto-confirmation for scripts.
     5. Installs/Upgrades ALL Windows tools via Chocolatey.
-    6. Automatically executes the 'wsl_ubuntu.sh' script at the end.
+    6. Automatically executes the 'wsl_ubuntu.sh' script.
+    7. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 1.4 (Merged & Translated)
+    Version: 1.6 (Full Temp Cleanup)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -44,7 +45,7 @@ try {
     Write-Host "============================================================"
     Write-Host "WSL 2 has been installed."
     Write-Host "PLEASE RESTART YOUR COMPUTER NOW."
-    Write-Host "After rebooting, run this 'setup_windows.ps1' script again."
+    Write-Host "After rebooting, run this 'setup.ps1' script again."
     Write-Host "The installation will continue from where it left off."
     Write-Host "============================================================"
     Read-Host "Press ENTER to close and restart your PC..."
@@ -119,7 +120,7 @@ choco upgrade dotnet-sdk
 # --- Section 5.4: Build Tools & Version Control ---
 Write-Host "[+] Upgrading Build Tools & Version Control..." -ForegroundColor Cyan
 choco upgrade git.install
-choco upgrade cmake.install --installargs 'ADD_CMAKE_TO_PATH=System'
+choco upgrade cmake.install --installargs 'ADD_CMAKE_TO_PATH_System'
 choco upgrade msys2
 
 # --- Section 5.5: Microsoft C++ Build Tools (MSVC) ---
@@ -236,7 +237,27 @@ if (-not (Test-Path $wslScriptPath)) {
     }
 }
 
-# --- 7. Finalization ---
+# --- 7. SYSTEM CLEANUP & OPTIMIZATION (UPDATED SECTION) ---
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Green
+Write-Host "  STARTING SYSTEM CLEANUP & OPTIMIZATION..." -ForegroundColor Green
+Write-Host "============================================================"
+Write-Host ""
+
+Write-Host "[+] Cleaning up Windows temporary files (User, System & Prefetch)..." -ForegroundColor Cyan
+# Clear User Temp Folder (%temp%)
+Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+# Clear Windows Temp Folder (temp)
+Remove-Item -Path "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+# Clear Prefetch Folder (prefetch) --- *** NOVA ADIÇÃO *** ---
+Remove-Item -Path "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host "[+] Optimizing main drive (C:)... (TRIM or Defrag)" -ForegroundColor Cyan
+Optimize-Volume -DriveLetter C -ErrorAction SilentlyContinue
+
+Write-Host "System cleanup complete." -ForegroundColor Green
+
+# --- 8. Finalization ---
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "  ENTIRE SETUP COMPLETE (WINDOWS + WSL)!" -ForegroundColor Green
