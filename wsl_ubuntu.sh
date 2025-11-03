@@ -2,7 +2,7 @@
 
 # =============================================================================
 #
-#  Setup Script for WSL (Ubuntu) - Version 1.3 (Translated)
+#  Setup Script for WSL (Ubuntu) - Version 1.4 (Added Cleanup)
 #
 #  Installs the C/C++ development environment (build-essential),
 #  a suite of pentesting tools (Kali-like),
@@ -108,6 +108,13 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM_P
 # Automatically enable plugins in .zshrc
 # This finds the line 'plugins=(git)' and replaces it
 sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
+
+# --- APT CLEANUP (NEW SECTION) ---
+echo "=========================================="
+echo "  Cleaning up APT cache and unused packages..."
+echo "=========================================="
+sudo apt autoremove -y
+sudo apt clean
 
 echo "=========================================="
 echo "  WSL (UBUNTU) SETUP COMPLETE!"
