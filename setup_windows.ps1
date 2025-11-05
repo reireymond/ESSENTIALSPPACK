@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.1 (Fixed all broken package IDs)
+    Version: 2.0 (Fixed all broken package IDs from user logs)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -186,7 +186,7 @@ choco upgrade $batch11a -y
 
 # 5.12: CYBERSECURITY & PENTESTING (Host) (FIXED IDs)
 Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
-$batch12 = @("nmap", "wireshark", "burp-suite-free-edition", "zap", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
+$batch12 = @("nmap", "wireshark", "burp-suite-community-edition", "zap", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
 choco upgrade $batch12 -y
 
 # 5.13: ESSENTIAL DEPENDENCIES (Runtimes)
@@ -195,9 +195,9 @@ $batch13 = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
 choco upgrade $batch13 -y
 Write-Host "Some runtimes may require a reboot. This will be checked at the end."
 
-# 5.14: TERMINAL ENHANCEMENTS (Oh My Posh + Font)
+# 5.14: TERMINAL ENHANCEMENTS (Oh My Posh + Font) (FIXED ID)
 Write-Host "[+] Upgrading Terminal Enhancements (Oh My Posh + Nerd Font)..." -ForegroundColor Cyan
-$batch14 = @("oh-my-posh", "caskaydiacove-nerdfont")
+$batch14 = @("oh-my-posh", "nerd-fonts-caskadiacove")
 choco upgrade $batch14 -y
 Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
 
