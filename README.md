@@ -2,7 +2,7 @@
 
 This repository contains a set of scripts to automate the setup of a comprehensive development, DevOps, and cybersecurity environment on Windows machines, with a focus on WSL 2 (Ubuntu) integration.
 
-## 🚀 What does it do? (Final Version)
+## 🚀 What does it do?
 
 This project automatically installs, configures, and updates over 90 essential tools, frameworks, and languages.
 
