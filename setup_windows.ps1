@@ -163,6 +163,11 @@ choco upgrade aws-cli; choco upgrade azure-cli; choco upgrade terraform
 Write-Host "[+] Upgrading Advanced Utilities & Security..." -ForegroundColor Cyan
 choco upgrade gsudo; choco upgrade keepassxc; choco upgrade windirstat; choco upgrade winscp
 
+# 5.11-A: MODERN TERMINAL UTILITIES (QoL)
+Write-Host "[+] Upgrading Modern Terminal Utilities (bat, exa)..." -ForegroundColor Cyan
+choco upgrade bat
+choco upgrade eza
+
 # 5.12: CYBERSECURITY & PENTESTING (Host)
 Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
 choco upgrade nmap; choco upgrade wireshark; choco upgrade zenmap; choco upgrade burpsuite; choco upgrade sqlmap; choco upgrade owasp-zap; choco upgrade ghidra; choco upgrade x64dbg; choco upgrade sysinternals; choco upgrade hashcat; choco upgrade autopsy; choco upgrade metasploit-framework; choco upgrade putty
