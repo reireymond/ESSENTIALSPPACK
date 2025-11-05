@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.0 (Performance & Batching Optimization)
+    Version: 2.1 (Added Firefox & Tor Browser)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -69,7 +69,7 @@ try {
     Write-Host "============================================================"
     Write-Host "WSL 2 has been installed."
     Write-Host "PLEASE RESTART YOUR COMPUTER NOW."
-    Write-Host "After rebooting, run this 'setup_windows.ps1' script again."
+    Write-Host "After rebooting, run this 'setup.ps1' script again."
     Write-Host "The installation will continue from where it left off."
     Write-Host "============================================================"
     Read-Host "Press ENTER to close and restart your PC..."
@@ -126,7 +126,7 @@ choco upgrade $batch1 -y
 
 # 5.2: Browsers
 Write-Host "[+] Upgrading Browsers..." -ForegroundColor Cyan
-$batch2 = @("firefox-developer-edition", "googlechrome")
+$batch2 = @("firefox-developer-edition", "firefox", "googlechrome", "tor-browser")
 choco upgrade $batch2 -y
 
 # 5.3: Programming Languages & Runtimes
@@ -387,6 +387,9 @@ Write-Host "[+] Cleaning up Windows temporary files (User, System & Prefetch)...
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemRoot\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host "[+] Cleaning up Chocolatey package cache..." -ForegroundColor Cyan
+choco cache --remove --all
 
 Write-Host "[+] Optimizing main drive (C:)... (TRIM or Defrag)" -ForegroundColor Cyan
 Optimize-Volume -DriveLetter C -ErrorAction SilentlyContinue
