@@ -4,11 +4,14 @@ This repository contains a set of scripts to automate the setup of a development
 
 ## 🚀 What does it do?
 
-This project automatically installs and configures:
+This project automatically installs, configures, and updates:
 
 * **Windows Environment (via Chocolatey):**
-    * **Editors & IDEs:** VS Code, Visual Studio 2022 Community, Neovim.
-    * **Terminals:** Windows Terminal, PowerShell Core.
+    * **Editors & IDEs:** VS Code, Visual Studio 2022 Community (w/ C++ workload), Neovim.
+    * **Terminal Enhancements:** Windows Terminal, PowerShell 7, **Oh My Posh**, and **CaskaydiaCove Nerd Font**.
+    * **Automated Configuration:**
+        * **VS Code:** Installs a full pack of 20+ extensions (Copilot, Python, C++, Java, WSL, etc.).
+        * **PowerShell Profile:** Configured with `Terminal-Icons`, menu-based completion, and history-prediction.
     * **Languages:** Python 3, Node.js, OpenJDK 17, .NET SDK.
     * **Build Tools:** Git, CMake, MSYS2.
     * **Virtualization:** Docker Desktop, VirtualBox.
@@ -16,17 +19,19 @@ This project automatically installs and configures:
     * **Hardware Diagnostics:** CPU-Z, GPU-Z, HWMonitor, CrystalDiskInfo, CrystalDiskMark, Speccy.
     * **Benchmark & Stress:** Prime95, MSI Afterburner.
     * **Cybersecurity Tools:** Nmap, Wireshark, Burp Suite, SQLMap, Ghidra, Autopsy, Metasploit, x64dbg, Sysinternals, Hashcat.
-    * **Utilities:** 7-Zip, Postman, DBeaver, Firefox Developer Edition, Discord, KeePassXC, WinDirStat, WinSCP, gsudo.
-    * **Essential Runtimes:** vcredist-all (VC++ 2005-2022), .NET 3.5, .NET 4.x, JRE8, DirectX 9.0c.
+    * **Utilities:** 7-Zip, Postman, DBeaver, Firefox Developer, Discord, KeePassXC, WinDirStat, WinSCP, gsudo.
+    * **Full Runtime Support:** vcredist-all (VC++ 2005-2022), .NET 3.5, .NET 4.x, JRE8, DirectX 9.0c.
+    * **System Maintenance:** Runs **Windows Update** and **cleans all temp/prefetch files** at the end.
 
 * **WSL (Ubuntu) Environment:**
     * **C/C++ Compilers:** `build-essential` (GCC, G++, Make), GDB, Valgrind.
     * **DevOps:** `kubectl` (Kubernetes).
     * **Pentesting Tools:** `masscan`, `ffuf`, `hydra`, `gobuster`, `nikto`, `john`, `seclists`, `searchsploit`, `smbclient`.
     * **RE & Forensics:** `radare2`, `binwalk`, `foremost`.
-    * **Terminal QoL:** `tmux`, `htop`, `bat`, `exa`, `tldr`, `shellcheck`.
-    * **Shell Upgrade:** Zsh + Oh My Zsh with auto-suggestion and syntax-highlighting plugins.
-
+    * **Terminal QoL:** `tmux`, `htop`, `bat`, `eza`, `tldr`, `shellcheck`.
+    * **Shell Upgrade:** Installs **Zsh + Oh My Zsh** with `auto-suggestions`, `syntax-highlighting`, and custom aliases (like `ll`, `update`, `cleanup`).
+    * **System Cleanup:** Automatically runs `apt autoremove` and `apt clean`.
+ 
 ---
 
 ## 📋 Prerequisites
