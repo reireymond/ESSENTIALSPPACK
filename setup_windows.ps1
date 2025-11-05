@@ -183,9 +183,14 @@ choco upgrade oh-my-posh
 choco upgrade caskaydiacove-nerdfont
 Write-Host "Oh My Posh e CaskaydiaCove NF (Nerd Font) instalados/atualizados."
 
-# 5.15: CONFIGURING POWERSHELL 7 PROFILE (Oh My Posh)
-Write-Host "[+] Configuring PowerShell 7 Profile for Oh My Posh..." -ForegroundColor Yellow
+# 5.15: CONFIGURING POWERSHELL 7 PROFILE (Productivity Pack)
+Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
+    
+    Write-Host "[+] Installing 'Terminal-Icons' module..."
+    
+    Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ErrorAction SilentlyContinue
+
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
     $ProfilePath = Join-Path $ProfileDir "Microsoft.PowerShell_profile.ps1"
     
@@ -194,20 +199,38 @@ try {
         New-Item -Path $ProfileDir -ItemType Directory -Force | Out-Null
     }
 
-    $OmpLine = "oh-my-posh init pwsh | Invoke-Expression"
+    $ProfileContent = @"
+
+# --- Productivity Pack Start ---
+# Faz o Terminal ser mais intuitivo (temas)
+oh-my-posh init pwsh | Invoke-Expression
+
+# Faz aparecer icones no Terminal
+Import-Module -Name Terminal-Icons
+
+# Faz o TAB (completar) funcionar como no Linux (menu interativo)
+Set-PSReadLineOption -EditMode Emacs
+
+# Habilita o autocompletar "fantasma" (baseado no histórico)
+Set-PSReadLineOption -PredictionSource History
+# --- Productivity Pack End ---
+"@
     
-    $FileContent = if (Test-Path $ProfilePath) { Get-Content $ProfilePath } else { $null }
+    $FileContent = if (Test-Path $ProfilePath) { Get-Content $ProfilePath -Raw } else { "" }
+
+    $Marker = "# --- Productivity Pack Start ---"
     
-    if ($FileContent -notcontains $OmpLine) {
-        Write-Host "Adding Oh My Posh config to $ProfilePath..."
-        Add-Content -Path $ProfilePath -Value $OmpLine
-        Write-Host "Oh My Posh configurado." -ForegroundColor Green
+    if ($FileContent -notlike "*$Marker*") {
+        Write-Host "Adding Productivity Pack to $ProfilePath..."
+        # Adiciona o bloco inteiro ao final do arquivo
+        Add-Content -Path $ProfilePath -Value $ProfileContent
+        Write-Host "PowerShell profile configured." -ForegroundColor Green
     } else {
-        Write-Host "Oh My Posh configuration already present in profile." -ForegroundColor Green
+        Write-Host "PowerShell profile already contains Productivity Pack. Skipping." -ForegroundColor Green
     }
 } catch {
     Write-Host "ERROR: Failed to configure PowerShell profile." -ForegroundColor Red
-    Write-Host "You may need to add the Oh My Posh init line manually."
+    Write-Host $_.Exception.Message
 }
 
 Write-Host "=================================================" -ForegroundColor Green
