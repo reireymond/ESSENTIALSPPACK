@@ -6,13 +6,13 @@
     2. Installs WSL 2 (if not installed) and prompts for a required reboot.
     3. Installs Chocolatey (if not installed).
     4. Enables Chocolatey's auto-confirmation for scripts.
-    5. Installs/Upgrades ALL Windows tools via Chocolatey (in batches for speed).
-    6. Installs essential VS Code Extensions (in one batch).
+    5. Installs/Upgrades ALL Windows tools via Chocolatey (centralized batches).
+    6. Installs essential VS Code Extensions.
     7. Automatically executes the 'wsl_ubuntu.sh' script.
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.8 (Fixed burpsuite and nerd-font package IDs based on user feedback)
+    Version: 2.9 (Melhorias: Centralização de pacotes, Correção do perfil PS7, Mais Winget)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -39,6 +39,41 @@ function Test-RebootRequired {
     return $false
 }
 
+# --- DEFINIÇÃO CENTRALIZADA DE PACOTES ---
+# Tipos: 'choco' (Chocolatey), 'winget' (Winget), 'manual' (Para comandos especiais, ex: VS2022)
+$PackageDefinitions = @{
+    "winget" = @{
+        "Editors & Terminals" = @(
+            @{ID="Microsoft.VisualStudioCode"; Name="VS Code"}
+            @{ID="Microsoft.WindowsTerminal"; Name="Windows Terminal"}
+        )
+        "Browsers" = @(
+            @{ID="Google.Chrome"; Name="Google Chrome"}
+            @{ID="Mozilla.Firefox"; Name="Mozilla Firefox"}
+        )
+        "Advanced Utilities & Security" = @(
+            @{ID="Insomnia.Insomnia"; Name="Insomnia API Client"}
+            @{ID="Microsoft.PowerToys"; Name="Microsoft PowerToys"}
+            @{ID="Obsidian.Obsidian"; Name="Obsidian Notes"}
+        )
+    }
+    "choco" = @{
+        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser")
+        "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk")
+        "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2")
+        "Virtualization"        = @("docker-desktop", "virtualbox")
+        "Databases & API"       = @("dbeaver", "postman")
+        "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
+        "Communication"         = @("discord")
+        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform")
+        "Runtimes Essenciais"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
+        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic")
+        "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
+    }
+}
+# ----------------------------------------------
+
+
 # --- 1. Administrator Check ---
 Write-Host "Checking for Administrator privileges..." -ForegroundColor Yellow
 if (-NOT ([System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -53,14 +88,12 @@ Write-Host "Administrator privileges confirmed." -ForegroundColor Green
 Write-Host ""
 Write-Host "Checking WSL 2 installation..." -ForegroundColor Yellow
 try {
-    # Try to get WSL status. If it fails (ExitCode != 0), WSL is not installed.
     wsl --status | Out-Null
     Write-Host "WSL 2 is already installed." -ForegroundColor Green
 } catch {
     Write-Host "WSL 2 not found. Starting installation..." -ForegroundColor Yellow
     Write-Host "This may take a few minutes..."
     
-    # Run the WSL installation command
     wsl --install
     
     Write-Host ""
@@ -73,7 +106,7 @@ try {
     Write-Host "The installation will continue from where it left off."
     Write-Host "============================================================"
     Read-Host "Press ENTER to close and restart your PC..."
-    exit # Exit script to force reboot
+    exit
 }
 
 # --- 3. Chocolatey Check & Installation ---
@@ -88,7 +121,6 @@ if ($null -eq $chocoPath) {
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         Write-Host "Chocolatey installed successfully!" -ForegroundColor Green
         
-        # Add choco to the current session's PATH
         $env:Path = "$($env:Path);$($env:ALLUSERSPROFILE)\chocolatey\bin"
     } catch {
         Write-Host "ERROR: Failed to install Chocolatey." -ForegroundColor Red
@@ -104,44 +136,49 @@ if ($null -eq $chocoPath) {
 Write-Host ""
 Write-Host "Enabling Chocolatey's automatic script confirmation (100% automated mode)..." -ForegroundColor Yellow
 try {
-    # This command prevents Choco from asking "[Y]es/[A]ll/[N]o" for every script
     choco feature enable -n=allowGlobalConfirmation
     Write-Host "Feature 'allowGlobalConfirmation' enabled." -ForegroundColor Green
 } catch {
     Write-Host "ERROR: Failed to enable 'allowGlobalConfirmation'. Script may prompt for confirmation." -ForegroundColor Red
 }
 
-# --- 5. BEGINNING WINDOWS TOOL UPGRADES (Batch Optimized) ---
+# --- 5. BEGINNING WINDOWS TOOL UPGRADES (Batch Loop) ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host "  STARTING INSTALLATION/UPGRADE OF WINDOWS TOOLS" -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
-$env:ChocolateyInstallArguments = "--yes"
+$env:ChocolateyInstallArguments = "--yes" # Define for choco
+$WingetArguments = "--accept-package-agreements --accept-source-agreements -h" # Define for winget
 
-# 5.1: Editors, Terminals & Utilities
-Write-Host "[+] Upgrading Editors, Terminals & Utilities..." -ForegroundColor Cyan
-$batch1 = @("vscode", "microsoft-windows-terminal", "neovim", "7zip", "powershell-core")
-choco upgrade $batch1 -y
+# 5.1: INSTALAÇÃO DE PACOTES GERAIS (CHOCOLATEY E WINGET)
+foreach ($Manager in $PackageDefinitions.Keys) {
+    Write-Host ""
+    Write-Host ">>> Iniciando instalações via $Manager..." -ForegroundColor Yellow
+    
+    foreach ($category in $PackageDefinitions[$Manager].Keys) {
+        $packages = $PackageDefinitions[$Manager][$category]
+        if ($packages.Count -eq 0) { continue }
+        
+        Write-Host "[+] Upgrading $category..." -ForegroundColor Cyan
+        
+        try {
+            if ($Manager -eq "choco") {
+                $packageNames = $packages -join " "
+                choco upgrade $packageNames -y -r
+            } elseif ($Manager -eq "winget") {
+                foreach ($pkg in $packages) {
+                    Write-Host "  -> Instalando $($pkg.Name) ($($pkg.ID))..."
+                    winget install $($pkg.ID) $WingetArguments | Out-Null
+                }
+            }
+        } catch {
+            Write-Host "AVISO: Falha ao instalar/atualizar um ou mais pacotes na categoria '$category' via $Manager." -ForegroundColor Yellow
+        }
+    }
+}
 
-# 5.2: Browsers (FIXED IDs)
-Write-Host "[+] Upgrading Browsers..." -ForegroundColor Cyan
-# REMOVED: 'firefox-dev' (pacote não encontrado no repositório Choco)
-$batch2 = @("firefox", "googlechrome", "tor-browser")
-choco upgrade $batch2 -y
-
-# 5.3: Programming Languages & Runtimes
-Write-Host "[+] Upgrading Languages & Runtimes..." -ForegroundColor Cyan
-$batch3 = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk")
-choco upgrade $batch3 -y
-
-# 5.4: Build Tools & Version Control
-Write-Host "[+] Upgrading Build Tools & Version Control..." -ForegroundColor Cyan
-$batch4 = @("git.install", "gh", "github-desktop", "msys2")
-choco upgrade $batch4 -y
-choco upgrade cmake.install --install-arguments 'ADD_CMAKE_TO_PATH_System' -y
-
-# 5.5: Microsoft C++ Build Tools (MSVC)
+# 5.2: INSTALAÇÕES MANUAIS / COMPLEXAS
 Write-Host ""
 Write-Host "================== LONG TASK WARNING (VS 2022) ==================" -ForegroundColor Yellow
 Write-Host "Starting 'Visual Studio 2022 Community' upgrade/install."
@@ -151,68 +188,57 @@ Write-Host "================================================================="
 Write-Host "[+] Upgrading Visual Studio 2022 Community IDE (for C++)..." -ForegroundColor Cyan
 choco upgrade visualstudio2022community --package-parameters "--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet" -y
 
-# 5.6: Virtualization & Containers
-Write-Host "[+] Upgrading Virtualization & Containers..." -ForegroundColor Cyan
-$batch6 = @("docker-desktop", "virtualbox")
-choco upgrade $batch6 -y
+Write-Host "[+] Upgrading CMake with Path set..." -ForegroundColor Cyan
+choco upgrade cmake.install --install-arguments 'ADD_CMAKE_TO_PATH_System' -y
 
-# 5.7: Databases & APIs
-Write-Host "[+] Upgrading Database & API Clients..." -ForegroundColor Cyan
-$batch7 = @("dbeaver", "postman")
-choco upgrade $batch7 -y
+Write-Host "=================================================" -ForegroundColor Green
+Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
+Write-Host "================================================="
+Write-Host ""
 
-# 5.8: Hardware Diagnostics, Benchmark & Monitoring (FIXED ID)
-Write-Host "[+] Upgrading Hardware Diagnostics & Benchmark Kit..." -ForegroundColor Cyan
-# REMOVED: 'msiafterburner' (pacote Choco quebrado, link de download negado)
-$batch8 = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
-choco upgrade $batch8 -y
-Write-Host "NOTE: 'msiafterburner' foi removido pois o pacote Choco está quebrado. Instale-o manualmente." -ForegroundColor Gray
 
-# 5.9: Productivity & Communication
-Write-Host "[+] Upgrading Communication Tools..." -ForegroundColor Cyan
-choco upgrade discord -y
+# --- 6. INSTALLING VS CODE EXTENSIONS (Batch Optimized) ---
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Green
+Write-Host "  INSTALLING VS CODE EXTENSIONS..." -ForegroundColor Green
+Write-Host "============================================================"
+Write-Host ""
 
-# 5.10: DevOps & Cloud Tools (FIXED ID)
-Write-Host "[+] Upgrading DevOps & Cloud Tools..." -ForegroundColor Cyan
-$batch10 = @("awscli", "azure-cli", "terraform")
-choco upgrade $batch10 -y
+if (Get-Command code -ErrorAction SilentlyContinue) {
+    Write-Host "[+] Installing/Updating extensions in one batch..." -ForegroundColor Cyan
+    
+    $extensions = @(
+        "pkief.material-icon-theme",
+        "eamodio.gitlens",
+        "formulahendry.code-runner",
+        "visualstudioexptteam.vscodeintellicode",
+        "github.copilot",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ritwickdey.liveserver",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "vscjava.vscode-java-pack",
+        "ms-vscode-remote.remote-wsl",
+        "ms-azuretools.vscode-docker",
+        "firefox-devtools.vscode-firefox-debug"
+    )
 
-# 5.11: Advanced Utilities & Personal Security
-Write-Host "[+] Upgrading Advanced Utilities & Security..." -ForegroundColor Cyan
-$batch11 = @("gsudo", "keepassxc", "windirstat", "winscp")
-choco upgrade $batch11 -y
+    foreach ($ext in $extensions) {
+        Write-Host "Installing $ext..."
+        code --install-extension $ext --force
+    }
 
-# 5.11-A: MODERN TERMINAL UTILITIES (QoL)
-Write-Host "[+] Upgrading Modern Terminal Utilities (bat, eza, devtoys)..." -ForegroundColor Cyan
-$batch11a = @("bat", "eza", "devtoys")
-choco upgrade $batch11a -y
+    Write-Host "VS Code extensions installed/updated." -ForegroundColor Green
+} else {
+    Write-Host "ERROR: 'code.exe' not found in PATH. Skipping VS Code extension install." -ForegroundColor Red
+    Write-Host "Please restart your terminal and run the script again if VS Code was just installed."
+}
 
-# 5.12: CYBERSECURITY & PENTESTING (Host) (FIXED IDs)
-Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
-# MODIFIED: Added zap (per user request), ilspy, cff-explorer, and volatility3
-$batch12 = @(
-    "nmap", "wireshark", "burp-suite-free-edition", "ghidra", POST,
-    "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty",
-    "zap", "ilspy", "cff-explorer-suite", "volatility3"
-)
-choco upgrade $batch12 -y --ignore-http-cache
-Write-Host "[+] Upgrading HTTP Debugging Proxy (Fiddler)..." -ForegroundColor Magenta
-choco upgrade fiddler-classic -y
 
-# 5.13: ESSENTIAL DEPENDENCIES (Runtimes)
-Write-Host "[+] Upgrading Essential Runtimes..." -ForegroundColor Yellow
-$batch13 = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
-choco upgrade $batch13 -y
-Write-Host "Some runtimes may require a reboot. This will be checked at the end."
-
-# 5.14: TERMINAL ENHANCEMENTS (Oh My Posh + Font) (FIXED ID)
-Write-Host "[+] Upgrading Terminal Enhancements (Oh My Posh + Nerd Font)..." -ForegroundColor Cyan
-# FIXED: 'caskaydiacove-nerd-font' alterado para 'nerd-fonts-cascadiacode'. Não precisa mais do --pre.
-$batch14 = @("oh-my-posh", "nerd-fonts-cascadiacode")
-choco upgrade $batch14 -y
-Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
-
-# 5.15: CONFIGURING POWERSHELL 7 PROFILE (Productivity Pack)
+# --- 6.1: CONFIGURANDO POWERSHELL 7 PROFILE (Productivity Pack) ---
 Write-Host "[+] Installing essential PowerShell Modules (Pester, PSReadLine)..." -ForegroundColor Yellow
 Install-Module -Name Pester -Force -Scope CurrentUser -Confirm:$false
 Install-Module -Name PSReadLine -Force -Scope CurrentUser -Confirm:$false
@@ -221,15 +247,13 @@ Install-Module -Name Microsoft.PowerShell.Archive -Force -Scope CurrentUser -Con
 Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
     Write-Host "[+] Installing 'Terminal-Icons' module..."
-    # FIXED: Garante que o provedor NuGet está instalado
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
-    # FIXED: Define o PSGallery como confiável (removido -Scope)
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-    # FIXED: Adicionado -ForceBootstrap para forçar a instalação do NuGet se ele falhar
     Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ForceBootstrap -ErrorAction Stop
 
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
-    $ProfilePath = Join-Path $ProfileDir "Microsoft.PowerShell_profile.ps1"
+    # CORREÇÃO: Usando 'profile.ps1' para PowerShell 7+
+    $ProfilePath = Join-Path $ProfileDir "profile.ps1"
     
     if (-not (Test-Path $ProfileDir)) {
         Write-Host "Creating PowerShell profile directory: $ProfileDir"
@@ -256,13 +280,12 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # --- Productivity Pack End ---
 "@
     
-    $FileContent = if (Test-Path $ProfilePath) { Get-Content $Path $ProfilePath -Raw } else { "" }
+    $FileContent = if (Test-Path $ProfilePath) { Get-Content $ProfilePath -Raw } else { "" }
 
     $Marker = "# --- Productivity Pack Start ---"
     
     if ($FileContent -notlike "*$Marker*") {
         Write-Host "Adding Productivity Pack to $ProfilePath..."
-        # Add the entire block to the end of the file
         Add-Content -Path $ProfilePath -Value $ProfileContent
         Write-Host "PowerShell profile configured." -ForegroundColor Green
     } else {
@@ -273,73 +296,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     Write-Host $_.Exception.Message
 }
 
-# --- 5.16: ADDITIONAL GUI APPLICATIONS & UTILITIES ---
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Green
-Write-Host "  INSTALLING GUI APPLICATIONS (PowerToys, WinMerge, Obsidian)" -ForegroundColor Green
-Write-Host "============================================================"
-Write-Host ""
-
-Write-Host "[+] Installing Microsoft PowerToys..." -ForegroundColor Cyan
-winget install Microsoft.PowerToys --accept-package-agreements --accept-source-agreements -h
-
-Write-Host "[+] Installing File Comparison Tool (WinMerge)..." -ForegroundColor Cyan
-choco upgrade winmerge -y
-
-Write-Host "[+] Installing Modern Notes App (Obsidian)..." -ForegroundColor Cyan
-winget install Obsidian.Obsidian --accept-package-agreements --accept-source-agreements -h
-
-Write-Host "[+] Installing API Client (Insomnia)..." -ForegroundColor Cyan
-winget install Insomnia.Insomnia --accept-package-agreements --accept-source-agreements -h
-
-Write-Host "=================================================" -ForegroundColor Green
-Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
-Write-Host "================================================="
-Write-Host ""
-
-
-# --- 6. INSTALLING VS CODE EXTENSIONS (Batch Optimized) ---
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Green
-Write-Host "  INSTALLING VS CODE EXTENSIONS..." -ForegroundColor Green
-Write-Host "============================================================"
-Write-Host ""
-
-if (Get-Command code -ErrorAction SilentlyContinue) {
-    Write-Host "[+] Installing/Updating extensions in one batch..." -ForegroundColor Cyan
-    
-    # Define all extensions in an array
-    $extensions = @(
-        "pkief.material-icon-theme",
-        "eamodio.gitlens",
-        "formulahendry.code-runner",
-        "visualstudioexptteam.vscodeintellicode",
-        "github.copilot",
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint",
-        "ritwickdey.liveserver",
-        "ms-vscode.cpptools",
-        "ms-vscode.cmake-tools",
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "vscjava.vscode-java-pack",
-        "ms-vscode-remote.remote-wsl",
-        "ms-azuretools.vscode-docker",
-        "firefox-devtools.vscode-firefox-debug"
-    )
-
-    # Loop and install (or use a single line, but loop gives better feedback)
-    foreach ($ext in $extensions) {
-        Write-Host "Installing $ext..."
-        code --install-extension $ext --force
-    }
-
-    Write-Host "VS Code extensions installed/updated." -ForegroundColor Green
-} else {
-    Write-Host "ERROR: 'code.exe' not found in PATH. Skipping VS Code extension install." -ForegroundColor Red
-    Write-Host "Please restart your terminal and run the script again if VS Code was just installed."
-}
-
 
 # --- 7. EXECUTING WSL SCRIPT (Automated Section) ---
 Write-Host ""
@@ -348,7 +304,6 @@ Write-Host "  STARTING AUTOMATED WSL (UBUNTU) SETUP..." -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
 
-# Find the path to the wsl_ubuntu.sh script in the same directory
 $wslScriptPath = Join-Path $PSScriptRoot "wsl_ubuntu.sh"
 
 if (-not (Test-Path $wslScriptPath)) {
@@ -376,7 +331,6 @@ if (-not (Test-Path $wslScriptPath)) {
     Write-Host "Starting 'wsl.exe'..." -ForegroundColor Yellow
     
     try {
-        # FIXED: Garantir que o script seja executado com 'bash' para evitar problemas de shell
         wsl.exe sudo bash "$fullLinuxPath"
         Write-Host "=================================================" -ForegroundColor Green
         Write-Host "  WSL (UBUNTU) SETUP COMPLETE!" -ForegroundColor Green
@@ -396,18 +350,14 @@ Write-Host ""
 
 Write-Host "[+] Installing/Checking 'PSWindowsUpdate' module..." -ForegroundColor Cyan
 try {
-    # FIXED: Garante que o provedor NuGet está instalado
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
-    # FIXED: Define o PSGallery como confiável (removido -Scope)
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-    # FIXED: Adicionado -ForceBootstrap para forçar a instalação do NuGet se ele falhar
     Install-Module -Name PSWindowsUpdate -Force -AcceptLicense -Confirm:$false -ForceBootstrap
     Import-Module PSWindowsUpdate -Force
     
     Write-Host "[+] Searching, downloading, and installing all Windows Updates..." -ForegroundColor Yellow
     Write-Host "This is the other step that MAY TAKE A VERY LONG TIME. Please wait..."
     
-    # Install updates WITHOUT auto-rebooting
     Install-WindowsUpdate -AcceptAll -ErrorAction SilentlyContinue
     
     if (Test-RebootRequired) {
@@ -433,7 +383,6 @@ Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction Silently
 Remove-Item -Path "$env:SystemRoot\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "[+] Cleaning up Chocolatey package cache..." -ForegroundColor Cyan
-# FIXED: 'choco cache --remove --all' foi alterado para 'choco cache remove --all'
 choco cache remove --all
 
 Write-Host "[+] Optimizing main drive (C:)... (TRIM or Defrag)" -ForegroundColor Cyan
@@ -449,7 +398,6 @@ Write-Host "  ENTIRE SETUP COMPLETE (WINDOWS + WSL)!" -ForegroundColor Green
 Write-Host "================================================="
 Write-Host ""
 
-# Final robust check for reboot
 if (Test-RebootRequired) {
     $Global:RebootIsNeeded = $true
 }
