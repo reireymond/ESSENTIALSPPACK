@@ -172,6 +172,39 @@ Write-Host "[+] Upgrading Essential Runtimes..." -ForegroundColor Yellow
 choco upgrade vcredist-all; choco upgrade dotnet3.5; choco upgrade dotnetfx; choco upgrade jre8; choco upgrade directx
 Write-Host "Some runtimes may require a reboot. This will be checked at the end."
 
+# 5.14: TERMINAL ENHANCEMENTS (Oh My Posh + Font)
+Write-Host "[+] Upgrading Terminal Enhancements (Oh My Posh + Nerd Font)..." -ForegroundColor Cyan
+choco upgrade oh-my-posh
+choco upgrade caskaydiacove-nerdfont
+Write-Host "Oh My Posh e CaskaydiaCove NF (Nerd Font) instalados/atualizados."
+
+# 5.15: CONFIGURING POWERSHELL 7 PROFILE (Oh My Posh)
+Write-Host "[+] Configuring PowerShell 7 Profile for Oh My Posh..." -ForegroundColor Yellow
+try {
+    $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
+    $ProfilePath = Join-Path $ProfileDir "Microsoft.PowerShell_profile.ps1"
+    
+    if (-not (Test-Path $ProfileDir)) {
+        Write-Host "Creating PowerShell profile directory: $ProfileDir"
+        New-Item -Path $ProfileDir -ItemType Directory -Force | Out-Null
+    }
+
+    $OmpLine = "oh-my-posh init pwsh --config 'https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/jandedobbeleer.json' | Invoke-Expression"
+    
+    $FileContent = if (Test-Path $ProfilePath) { Get-Content $ProfilePath } else { $null }
+    
+    if ($FileContent -notcontains $OmpLine) {
+        Write-Host "Adding Oh My Posh config to $ProfilePath..."
+        Add-Content -Path $ProfilePath -Value $OmpLine
+        Write-Host "Oh My Posh configurado." -ForegroundColor Green
+    } else {
+        Write-Host "Oh My Posh configuration already present in profile." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "ERROR: Failed to configure PowerShell profile." -ForegroundColor Red
+    Write-Host "You may need to add the Oh My Posh init line manually."
+}
+
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
 Write-Host "================================================="
