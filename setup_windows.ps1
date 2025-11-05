@@ -137,8 +137,8 @@ choco upgrade $batch3 -y
 
 # 5.4: Build Tools & Version Control
 Write-Host "[+] Upgrading Build Tools & Version Control..." -ForegroundColor Cyan
-choco upgrade git.install -y
-choco upgrade msys2 -y
+$batch4 = @("git.install", "gh", "github-desktop", "msys2")
+choco upgrade $batch4 -y
 choco upgrade cmake.install --install-arguments 'ADD_CMAKE_TO_PATH_System' -y
 
 # 5.5: Microsoft C++ Build Tools (MSVC)
