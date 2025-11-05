@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.9 (Melhorias: Centralização de pacotes, Correção do perfil PS7, Mais Winget)
+    Version: 3.0 (Melhorias: Maior robustez na instalação de módulos PS, novas ferramentas: zoxide, gcm)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -39,8 +39,22 @@ function Test-RebootRequired {
     return $false
 }
 
+# Função para instalar módulo PS com checagem
+function Install-PSModuleSafely {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Name
+    )
+    if (-not (Get-Module -ListAvailable -Name $Name)) {
+        Write-Host "Instalando módulo PowerShell: $Name..." -ForegroundColor Yellow
+        Install-Module -Name $Name -Force -Scope CurrentUser -Confirm:$false -ForceBootstrap -ErrorAction Stop
+    } else {
+        Write-Host "Módulo PowerShell '$Name' já instalado." -ForegroundColor Green
+    }
+}
+
 # --- DEFINIÇÃO CENTRALIZADA DE PACOTES ---
-# Tipos: 'choco' (Chocolatey), 'winget' (Winget), 'manual' (Para comandos especiais, ex: VS2022)
+# Tipos: 'choco' (Chocolatey), 'winget' (Winget)
 $PackageDefinitions = @{
     "winget" = @{
         "Editors & Terminals" = @(
@@ -55,10 +69,11 @@ $PackageDefinitions = @{
             @{ID="Insomnia.Insomnia"; Name="Insomnia API Client"}
             @{ID="Microsoft.PowerToys"; Name="Microsoft PowerToys"}
             @{ID="Obsidian.Obsidian"; Name="Obsidian Notes"}
+            @{ID="Git.CredentialManager"; Name="Git Credential Manager"} # Adição
         )
     }
     "choco" = @{
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser")
+        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide") # Adição: zoxide
         "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk")
         "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2")
         "Virtualization"        = @("docker-desktop", "virtualbox")
@@ -67,7 +82,7 @@ $PackageDefinitions = @{
         "Communication"         = @("discord")
         "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform")
         "Runtimes Essenciais"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic")
+        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier") # Adição: proxifier
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
@@ -240,19 +255,19 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
 
 # --- 6.1: CONFIGURANDO POWERSHELL 7 PROFILE (Productivity Pack) ---
 Write-Host "[+] Installing essential PowerShell Modules (Pester, PSReadLine)..." -ForegroundColor Yellow
-Install-Module -Name Pester -Force -Scope CurrentUser -Confirm:$false
-Install-Module -Name PSReadLine -Force -Scope CurrentUser -Confirm:$false
-Install-Module -Name Microsoft.PowerShell.Archive -Force -Scope CurrentUser -Confirm:$false
+# Usando a nova função para checar antes de instalar
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
+Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+Install-PSModuleSafely -Name "Pester"
+Install-PSModuleSafely -Name "PSReadLine"
+Install-PSModuleSafely -Name "Microsoft.PowerShell.Archive"
 
 Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
-    Write-Host "[+] Installing 'Terminal-Icons' module..."
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
-    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-    Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ForceBootstrap -ErrorAction Stop
+    Write-Host "[+] Instalando 'Terminal-Icons' module..."
+    Install-PSModuleSafely -Name "Terminal-Icons"
 
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
-    # CORREÇÃO: Usando 'profile.ps1' para PowerShell 7+
     $ProfilePath = Join-Path $ProfileDir "profile.ps1"
     
     if (-not (Test-Path $ProfileDir)) {
@@ -331,7 +346,8 @@ if (-not (Test-Path $wslScriptPath)) {
     Write-Host "Starting 'wsl.exe'..." -ForegroundColor Yellow
     
     try {
-        wsl.exe sudo bash "$fullLinuxPath"
+        # MELHORIA: Especifica a distribuição (Ubuntu) para maior robustez
+        wsl.exe -d Ubuntu sudo bash "$fullLinuxPath"
         Write-Host "=================================================" -ForegroundColor Green
         Write-Host "  WSL (UBUNTU) SETUP COMPLETE!" -ForegroundColor Green
         Write-Host "================================================="
@@ -352,7 +368,7 @@ Write-Host "[+] Installing/Checking 'PSWindowsUpdate' module..." -ForegroundColo
 try {
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-    Install-Module -Name PSWindowsUpdate -Force -AcceptLicense -Confirm:$false -ForceBootstrap
+    Install-PSModuleSafely -Name "PSWindowsUpdate"
     Import-Module PSWindowsUpdate -Force
     
     Write-Host "[+] Searching, downloading, and installing all Windows Updates..." -ForegroundColor Yellow
