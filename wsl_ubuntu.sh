@@ -247,15 +247,17 @@ echo "=========================================="
 echo "  KALI PACK: Web Analysis"
 echo "=========================================="
 sudo apt-get install -y \
-  gobuster dirb nikto whatweb ffuf sqlmap wfuzz
+  gobuster dirb nikto whatweb ffuf sqlmap wfuzz \
+  dirsearch mitmproxy
 
 echo "=========================================="
 echo "  KALI PACK: Password, Exploit & Sniffing"
 echo "=========================================="
 sudo apt-get install -y \
   john hashid seclists thc-hydra \
-  exploitdb metasplot-framework \
-  python3-impacket impacket-scripts dsniff aircrack-ng
+  exploitdb metasploit-framework \
+  python3-impacket impacket-scripts dsniff aircrack-ng \
+  bettercap reaver
 
 echo "=========================================="
 echo "  KALI PACK: RE, Forensics & GDB"
@@ -268,10 +270,8 @@ echo "  KALI PACK: Post-Exploitation & AD"
 echo "=========================================="
 # evil-winrm
 sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && gem install evil-winrm"
-
 # bloodhound-py
 sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pip install bloodhound-py"
-
 # reverse engeenering
 sudo pip3 install uncompyle6
 
@@ -282,6 +282,19 @@ if [ ! -f "/home/${SUDO_USER}/.gdbinit-gef.py" ]; then
 else
     echo "GEF already installed. Skipping."
 fi
+
+echo "=========================================="
+echo "  KALI PACK: Post-Exploitation & Python Tools"
+echo "=========================================="
+
+echo "[+] Installing Evil-WinRM (via Ruby)..."
+sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && gem install evil-winrm"
+
+echo "[+] Installing Python Pentest Tools (pwntools, bloodhound, sublist3r)..."
+sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && \
+    pip install pwntools && \
+    pip install bloodhound-py && \
+    pip install sublist3r"
 
 # -----------------------------------------------------------------------------
 #  SECTION 6: ALIASES & SHELL LOADERS
