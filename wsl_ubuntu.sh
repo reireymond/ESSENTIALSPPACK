@@ -149,6 +149,12 @@ if [ ! -L /usr/bin/bat ]; then
 fi
 
 echo "=========================================="
+echo "  Installing QoL Git TUI (lazygit)"
+echo "=========================================="
+go install github.com/jesseduffield/lazygit@latest
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/lazygit /usr/local/bin/
+
+echo "=========================================="
 echo "  Installing DevOps & Cloud Tools"
 echo "=========================================="
 
@@ -167,6 +173,10 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin
 echo "[+] Adding $SUDO_USER to the 'docker' group..."
 sudo usermod -aG docker $SUDO_USER
+echo "[+] Configuring passwordless sudo for Docker service..."
+sudo cp -f /etc/sudoers /etc/sudoers.bak
+echo "%docker ALL=(ALL) NOPASSWD: /usr/sbin/service docker *" | sudo tee /etc/sudoers.d/docker-nopasswd
+sudo chmod 0440 /etc/sudoers.d/docker-nopasswd
 
 # 3. Helm (Kubernetes Package Manager)
 curl https://baltocdn.com/helm/signing.asc | sudo gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
@@ -263,7 +273,8 @@ echo "=========================================="
 echo "  KALI PACK: RE, Forensics & GDB"
 echo "=========================================="
 sudo apt-get install -y \
-  binwalk radare2 foremost
+  binwalk radare2 foremost \
+  sleuthkit volatility3
 
 echo "=========================================="
 echo "  KALI PACK: Post-Exploitation & Python Tools"
