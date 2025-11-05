@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.1 (Added Firefox & Tor Browser)
+    Version: 2.1 (Fixed all broken package IDs)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -124,9 +124,9 @@ Write-Host "[+] Upgrading Editors, Terminals & Utilities..." -ForegroundColor Cy
 $batch1 = @("vscode", "microsoft-windows-terminal", "neovim", "7zip", "powershell-core")
 choco upgrade $batch1 -y
 
-# 5.2: Browsers
+# 5.2: Browsers (FIXED IDs)
 Write-Host "[+] Upgrading Browsers..." -ForegroundColor Cyan
-$batch2 = @("firefox-developer-edition", "firefox", "googlechrome", "tor-browser")
+$batch2 = @("firefox-dev", "firefox", "googlechrome", "tor-browser")
 choco upgrade $batch2 -y
 
 # 5.3: Programming Languages & Runtimes
@@ -160,18 +160,18 @@ Write-Host "[+] Upgrading Database & API Clients..." -ForegroundColor Cyan
 $batch7 = @("dbeaver", "postman")
 choco upgrade $batch7 -y
 
-# 5.8: Hardware Diagnostics, Benchmark & Monitoring
+# 5.8: Hardware Diagnostics, Benchmark & Monitoring (FIXED ID)
 Write-Host "[+] Upgrading Hardware Diagnostics & Benchmark Kit..." -ForegroundColor Cyan
-$batch8 = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "msi-afterburner", "prime95")
+$batch8 = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "msiafterburner", "prime95")
 choco upgrade $batch8 -y
 
 # 5.9: Productivity & Communication
 Write-Host "[+] Upgrading Communication Tools..." -ForegroundColor Cyan
 choco upgrade discord -y
 
-# 5.10: DevOps & Cloud Tools
+# 5.10: DevOps & Cloud Tools (FIXED ID)
 Write-Host "[+] Upgrading DevOps & Cloud Tools..." -ForegroundColor Cyan
-$batch10 = @("aws-cli", "azure-cli", "terraform")
+$batch10 = @("awscli", "azure-cli", "terraform")
 choco upgrade $batch10 -y
 
 # 5.11: Advanced Utilities & Personal Security
@@ -184,9 +184,9 @@ Write-Host "[+] Upgrading Modern Terminal Utilities (bat, eza)..." -ForegroundCo
 $batch11a = @("bat", "eza")
 choco upgrade $batch11a -y
 
-# 5.12: CYBERSECURITY & PENTESTING (Host)
+# 5.12: CYBERSECURITY & PENTESTING (Host) (FIXED IDs)
 Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
-$batch12 = @("nmap", "wireshark", "zenmap", "burpsuite", "sqlmap", "owasp-zap", "ghidra", "x64dbg", "sysinternals", "hashcat", "autopsy", "metasploit-framework", "putty")
+$batch12 = @("nmap", "wireshark", "burp-suite-free-edition", "zap", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
 choco upgrade $batch12 -y
 
 # 5.13: ESSENTIAL DEPENDENCIES (Runtimes)
