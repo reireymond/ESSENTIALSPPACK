@@ -66,10 +66,12 @@ The entire process is automated by a single master script.
 **What will happen:**
 
 1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `setup_windows.ps1` again.
-2.  It will install/verify **Chocolatey**.
-3.  It will install/upgrade **all 70+ Windows tools**.
-4.  At the end, it will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted.
-5.  **Close and reopen** your terminal at the very end.
+2.  It will install/verify **Chocolatey** and enable auto-confirmation.
+3.  It will install/upgrade **all 70+ Windows tools** and **VS Code extensions**.
+4.  It will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted.
+5.  It will run **Windows Update** to install all pending security patches.
+6.  It will **clean up** temp files and **optimize** your drive.
+7.  **Close and reopen** your terminal at the very end.
 
 Done! Your full environment is now configured.
 
