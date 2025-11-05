@@ -2,13 +2,15 @@
 
 # =============================================================================
 #
-#  Setup Script for WSL (Ubuntu) - Version 1.7 (Added Metasploit & SQLMap)
+#  Setup Script for WSL (Ubuntu) - Version 1.8 (Fixed package names)
 #
 #  Installs the C/C++ development environment (build-essential),
 #  a suite of pentesting tools (Kali-like),
 #  terminal QoL utilities, DevOps tools (kubectl),
 #  enhances the terminal with Zsh + Oh My Zsh,
 #  and applies custom aliases idempotently.
+#
+#  CRITICAL: This file MUST be saved with Unix (LF) line endings, not (CRLF).
 #
 # =============================================================================
 
@@ -36,21 +38,25 @@ sudo apt install -y shellcheck       # Shell script linter
 echo "=========================================="
 echo "  Installing Terminal QoL (Quality of Life) Utilities"
 echo "=========================================="
-# tmux (multiplexer), htop (monitor), bat (cat w/ colors), exa (modern ls)
-# tldr (simplified man pages)
-sudo apt install -y tmux htop bat exa tldr
+# tmux (multiplexer), htop (monitor), bat (cat w/ colors)
+# FIXED: 'exa' foi substituído por 'eza' (substituto moderno)
+# FIXED: 'tldr' (pacote principal)
+sudo apt install -y tmux htop bat eza tldr
 
 # Fix 'bat' command name on Ubuntu (batcat -> bat)
 # Remove link if it exists (to prevent error) and create the new one
-sudo rm -f /usr/bin/bat
-sudo ln -s /usr/bin/batcat /usr/bin/bat
+if [ ! -L /usr/bin/bat ]; then
+  sudo rm -f /usr/bin/bat
+  sudo ln -s /usr/bin/batcat /usr/bin/bat
+fi
 
 echo "=========================================="
 echo "  Installing Network & Enumeration Tools"
 echo "=========================================="
 # net-tools (for ifconfig, etc.), smbclient (Windows pentest)
 # masscan (ultra-fast port scanner)
-sudo apt install -y net-tools smbclient enum4linux nbtscan onesixtyone masscan
+# FIXED: 'enum4linux' foi substituído por 'enum4linux-ng' (moderno)
+sudo apt install -y net-tools smbclient enum4linux-ng nbtscan onesixtyone masscan
 
 echo "=========================================="
 echo "  Installing Web Analysis Tools"
@@ -63,18 +69,18 @@ echo "=========================================="
 echo "  Installing Password Tools & Wordlists"
 echo "=========================================="
 # john the ripper, hashid (hash identifier), seclists (BEST wordlists)
-# hydra (service brute-forcer)
-sudo apt install -y john hashid seclists hydra
+# FIXED: 'hydra' foi substituído por 'thc-hydra' (nome correto do pacote)
+sudo apt install -y john hashid seclists thc-hydra
 
 echo "=========================================="
 echo "  Installing Exploit, RE & Forensics Tools"
 echo "=========================================="
-# searchsploit (Exploit-DB offline database)
+# FIXED: 'searchsploit' é incluído no pacote 'exploitdb'
 # binwalk (firmware & file analysis)
 # radare2 (reverse engineering)
 # foremost (forensics, file carving)
 # metasploit-framework (Exploitation framework)
-sudo apt install -y searchsploit exploitdb binwalk radare2 foremost metasploit-framework
+sudo apt install -y exploitdb binwalk radare2 foremost metasploit-framework
 
 echo "=========================================="
 echo "  Installing DevOps Tools (Kubernetes)"
