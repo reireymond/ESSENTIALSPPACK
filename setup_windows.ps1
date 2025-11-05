@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 3.1 (Melhorias: Codificação UTF8 explícita no perfil PS, --noprogress no Choco, MariaDB/Nginx adicionados)
+    Version: 3.2 (Adição de Linguagens: Extensões Dart/Flutter para VS Code)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -77,11 +77,9 @@ $PackageDefinitions = @{
         "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk")
         "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2")
         "Virtualization"        = @("docker-desktop", "virtualbox")
-        # Adicionado mariadb e nginx
         "Databases & API"       = @("dbeaver", "postman", "mariadb", "nginx")
         "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
         "Communication"         = @("discord")
-        # Adicionado kubernetes-cli
         "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
         "Runtimes Essenciais"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
         "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier")
@@ -182,7 +180,6 @@ foreach ($Manager in $PackageDefinitions.Keys) {
         try {
             if ($Manager -eq "choco") {
                 $packageNames = $packages -join " "
-                # MELHORIA: Adicionado --noprogress para acelerar a instalação em lote
                 choco upgrade $packageNames -y -r --noprogress
             } elseif ($Manager -eq "winget") {
                 foreach ($pkg in $packages) {
@@ -241,7 +238,10 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
         "vscjava.vscode-java-pack",
         "ms-vscode-remote.remote-wsl",
         "ms-azuretools.vscode-docker",
-        "firefox-devtools.vscode-firefox-debug"
+        "firefox-devtools.vscode-firefox-debug",
+        # NOVAS LINGUAGENS: Dart/Flutter
+        "dart-code.dart-code",
+        "dart-code.flutter"
     )
 
     foreach ($ext in $extensions) {
@@ -303,7 +303,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     
     if ($FileContent -notlike "*$Marker*") {
         Write-Host "Adding Productivity Pack to $ProfilePath..."
-        # MELHORIA: Uso explícito de UTF8 para evitar corrupção de caracteres especiais
         $ProfileContent | Out-File -FilePath $ProfilePath -Encoding UTF8 -Append
         Write-Host "PowerShell profile configured." -ForegroundColor Green
     } else {
