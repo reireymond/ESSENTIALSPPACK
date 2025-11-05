@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 3.0 (Melhorias: Maior robustez na instalação de módulos PS, novas ferramentas: zoxide, gcm)
+    Version: 3.1 (Melhorias: Codificação UTF8 explícita no perfil PS, --noprogress no Choco, MariaDB/Nginx adicionados)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -69,20 +69,22 @@ $PackageDefinitions = @{
             @{ID="Insomnia.Insomnia"; Name="Insomnia API Client"}
             @{ID="Microsoft.PowerToys"; Name="Microsoft PowerToys"}
             @{ID="Obsidian.Obsidian"; Name="Obsidian Notes"}
-            @{ID="Git.CredentialManager"; Name="Git Credential Manager"} # Adição
+            @{ID="Git.CredentialManager"; Name="Git Credential Manager"}
         )
     }
     "choco" = @{
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide") # Adição: zoxide
+        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide")
         "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk")
         "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2")
         "Virtualization"        = @("docker-desktop", "virtualbox")
-        "Databases & API"       = @("dbeaver", "postman")
+        # Adicionado mariadb e nginx
+        "Databases & API"       = @("dbeaver", "postman", "mariadb", "nginx")
         "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
         "Communication"         = @("discord")
-        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform")
+        # Adicionado kubernetes-cli
+        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
         "Runtimes Essenciais"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier") # Adição: proxifier
+        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier")
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
@@ -180,7 +182,8 @@ foreach ($Manager in $PackageDefinitions.Keys) {
         try {
             if ($Manager -eq "choco") {
                 $packageNames = $packages -join " "
-                choco upgrade $packageNames -y -r
+                # MELHORIA: Adicionado --noprogress para acelerar a instalação em lote
+                choco upgrade $packageNames -y -r --noprogress
             } elseif ($Manager -eq "winget") {
                 foreach ($pkg in $packages) {
                     Write-Host "  -> Instalando $($pkg.Name) ($($pkg.ID))..."
@@ -201,10 +204,10 @@ Write-Host "This is the largest download and can take 30-60 minutes."
 Write-Host "The terminal MAY APPEAR FROZEN. This is normal. Please wait..."
 Write-Host "================================================================="
 Write-Host "[+] Upgrading Visual Studio 2022 Community IDE (for C++)..." -ForegroundColor Cyan
-choco upgrade visualstudio2022community --package-parameters "--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet" -y
+choco upgrade visualstudio2022community --package-parameters "--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet" -y --noprogress
 
 Write-Host "[+] Upgrading CMake with Path set..." -ForegroundColor Cyan
-choco upgrade cmake.install --install-arguments 'ADD_CMAKE_TO_PATH_System' -y
+choco upgrade cmake.install --install-arguments 'ADD_CMAKE_TO_PATH_System' -y --noprogress
 
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
@@ -255,7 +258,6 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
 
 # --- 6.1: CONFIGURANDO POWERSHELL 7 PROFILE (Productivity Pack) ---
 Write-Host "[+] Installing essential PowerShell Modules (Pester, PSReadLine)..." -ForegroundColor Yellow
-# Usando a nova função para checar antes de instalar
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
 Install-PSModuleSafely -Name "Pester"
@@ -301,7 +303,8 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     
     if ($FileContent -notlike "*$Marker*") {
         Write-Host "Adding Productivity Pack to $ProfilePath..."
-        Add-Content -Path $ProfilePath -Value $ProfileContent
+        # MELHORIA: Uso explícito de UTF8 para evitar corrupção de caracteres especiais
+        $ProfileContent | Out-File -FilePath $ProfilePath -Encoding UTF8 -Append
         Write-Host "PowerShell profile configured." -ForegroundColor Green
     } else {
         Write-Host "PowerShell profile already contains Productivity Pack. Skipping." -ForegroundColor Green
@@ -346,7 +349,6 @@ if (-not (Test-Path $wslScriptPath)) {
     Write-Host "Starting 'wsl.exe'..." -ForegroundColor Yellow
     
     try {
-        # MELHORIA: Especifica a distribuição (Ubuntu) para maior robustez
         wsl.exe -d Ubuntu sudo bash "$fullLinuxPath"
         Write-Host "=================================================" -ForegroundColor Green
         Write-Host "  WSL (UBUNTU) SETUP COMPLETE!" -ForegroundColor Green
