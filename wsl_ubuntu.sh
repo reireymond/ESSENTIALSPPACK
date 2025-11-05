@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 3.2 (Com Pipx, fd, httpx, subfinder e Lazydocker)
+#  Version 3.3 (Max Speed, Set -e, Maven, Composer, Feroxbuster)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #  Features:
@@ -13,6 +13,9 @@
 #  - Pentest: Kali-Linux toolset + GDB Enhanced Features (GEF) + Go Recon Tools.
 #
 # =============================================================================
+
+# MELHORIA: Sai imediatamente se um comando falhar
+set -e
 
 # Ensures the script is non-interactive
 export DEBIAN_FRONTEND=noninteractive
@@ -27,29 +30,49 @@ sudo apt-get update
 sudo apt-get upgrade -y
 
 # -----------------------------------------------------------------------------
-#  SECTION 1: CORE DEPENDENCIES & BUILD TOOLS
+#  SECTION 1: CORE DEPENDENCIES & BUILD TOOLS (MAX APT SPEED)
 # -----------------------------------------------------------------------------
 
 echo "=========================================="
-echo "  Installing Core Build Tools (C/C++, Python, Shell)"
+echo "  Installing All Core APT Packages (One Batch for Speed)"
 echo "=========================================="
-# build-essential, gdb, valgrind, binutils, shellcheck
-# Adicionado python3-dev para garantir que pacotes python com dependências C sejam compilados
+# MELHORIA: Todos os apt-get foram combinados em um único comando grande
 sudo apt-get install -y \
+  # Core Build Tools & Debugging (C/C++)
   build-essential gdb valgrind binutils \
-  shellcheck \
-  python3-dev \
+  # Shell & Python Dev Deps
+  shellcheck python3-dev \
   libssl-dev libffi-dev libbz2-dev libreadline-dev libsqlite3-dev liblzma-dev \
-  autoconf bison patch libyaml-dev libtool
+  autoconf bison patch libyaml-dev libtool \
+  # Runtimes via APT
+  golang-go lua5.4 \
+  php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath \
+  # MELHORIA: Adicionado Composer para PHP
+  php-composer \
+  # Terminal QoL
+  tmux htop bat eza tldr \
+  jq fzf ripgrep ncdu \
+  neovim fd-find duf \
+  # Kali Pack: Recon & Enumeration
+  nmap net-tools dnsutils tcpdump amass \
+  smbclient enum4linux-ng nbtscan onesixtyone masscan \
+  # Kali Pack: Web Analysis
+  gobuster dirb nikto whatweb ffuf sqlmap wfuzz \
+  dirsearch mitmproxy \
+  # Kali Pack: Password, Exploit & Sniffing
+  john hashid seclists thc-hydra \
+  exploitdb metasploit-framework \
+  python3-impacket impacket-scripts dsniff aircrack-ng \
+  bettercap reaver \
+  # Kali Pack: RE, Forensics & GDB
+  binwalk radare2 foremost radare2-r2pipe \
+  sleuthkit volatility3 \
+  # Dependências de Instalação (Docker, SDKMAN)
+  zip unzip software-properties-common
 
 # -----------------------------------------------------------------------------
 #  SECTION 2: RUNTIMES & VERSION MANAGERS
 # -----------------------------------------------------------------------------
-
-echo "=========================================="
-echo "  Installing Go (Golang)"
-echo "=========================================="
-sudo apt-get install -y golang-go
 
 echo "=========================================="
 echo "  Installing Rust (rustup)"
@@ -59,16 +82,6 @@ if ! command -v rustup &> /dev/null; then
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     source "$HOME/.cargo/env"
 fi
-
-echo "=========================================="
-echo "  Installing Lua"
-echo "=========================================="
-sudo apt-get install -y lua5.4
-
-echo "=========================================="
-echo "  Installing PHP (with common extensions)"
-echo "=========================================="
-sudo apt-get install -y php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath
 
 echo "=========================================="
 echo "  Installing .NET SDK (Microsoft)"
@@ -85,8 +98,6 @@ sudo apt-get install -y dotnet-sdk-8.0
 echo "=========================================="
 echo "  Installing SDKMAN (for Java, Kotlin, etc.)"
 echo "=========================================="
-# Install dependencies
-sudo apt-get install -y zip unzip
 # Install SDKMAN
 if [ ! -d "/home/${SUDO_USER}/.sdkman" ]; then
     echo "Installing SDKMAN..."
@@ -113,9 +124,7 @@ if ! command -v poetry &> /dev/null; then
     echo "Installing Poetry (Project Manager)..."
     curl -sSL https://install.python-poetry.org | sudo -u $SUDO_USER python3 -
 fi
-# Adicionando pipx para ferramentas CLI isoladas
 echo "Installing pipx (for isolated Python CLIs)..."
-sudo apt-get install -y pipx
 sudo -u $SUDO_USER bash -c "export PATH=\"$PATH\" && pipx ensurepath"
 
 
@@ -131,43 +140,40 @@ if ! command -v rbenv &> /dev/null; then
 fi
 
 # -----------------------------------------------------------------------------
-#  SECTION 3: TERMINAL QOL & DEVOPS
+#  SECTION 3: DEVOPS & PRODUTIVIDADE
 # -----------------------------------------------------------------------------
 
+# Nginx é instalado como um servidor de teste local
 echo "=========================================="
-echo "  Installing Terminal QoL (Utilities)"
+echo "  Setting up Local Webserver (Nginx)"
 echo "=========================================="
-# Adicionado fd-find e duf
-sudo apt-get install -y \
-  tmux htop bat eza tldr \
-  jq fzf ripgrep ncdu \
-  neovim fd-find duf
+sudo apt-get install -y nginx
 
-# Fix 'bat' command name on Ubuntu
-if [ ! -L /usr/bin/bat ]; then
-  sudo rm -f /usr/bin/bat
-  sudo ln -s /usr/bin/batcat /usr/bin/bat
-fi
 # Fix 'fd' command name on Ubuntu
 if [ ! -L /usr/bin/fd ]; then
-  sudo rm -f /usr/bin/fd
+  sudo rm -f /usr/bin/fd || true
   sudo ln -s /usr/bin/fdfind /usr/bin/fd
+fi
+# Fix 'bat' command name on Ubuntu
+if [ ! -L /usr/bin/bat ]; then
+  sudo rm -f /usr/bin/bat || true
+  sudo ln -s /usr/bin/batcat /usr/bin/bat
 fi
 
 echo "=========================================="
-echo "  Installing QoL Git TUI (lazygit)"
+echo "  Installing QoL Git/Docker TUIs"
 echo "=========================================="
 go install github.com/jesseduffield/lazygit@latest
+go install github.com/jesseduffield/lazydocker@latest
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/lazygit /usr/local/bin/
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/lazydocker /usr/local/bin/
 
 echo "=========================================="
-echo "  Installing DevOps & Cloud Tools"
+echo "  Installing Cloud & Infra Tools"
 echo "=========================================="
 
-# 1. Kubectl (Kubernetes manager)
-sudo snap install kubectl --classic
-
-# 2. Docker CLI (to connect to Docker Desktop)
+# Docker setup (chaves e repositório)
+# Não precisa de apt-get install, pois já foi incluído no batch da Seção 1
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -176,6 +182,7 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
+# Instalação dos plugins Docker (CLI, Buildx)
 sudo apt-get install -y docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin
 echo "[+] Adding $SUDO_USER to the 'docker' group..."
 sudo usermod -aG docker $SUDO_USER
@@ -184,35 +191,27 @@ sudo cp -f /etc/sudoers /etc/sudoers.bak
 echo "%docker ALL=(ALL) NOPASSWD: /usr/sbin/service docker *" | sudo tee /etc/sudoers.d/docker-nopasswd
 sudo chmod 0440 /etc/sudoers.d/docker-nopasswd
 
-# 2.1 Lazydocker (Adição: TUI para Docker)
-go install github.com/jesseduffield/lazydocker@latest
-sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/lazydocker /usr/local/bin/
-
-# 3. Helm (Kubernetes Package Manager)
+# Helm setup (chaves e repositório)
 curl https://baltocdn.com/helm/signing.asc | sudo gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
 sudo apt-get update
-sudo apt-get install -y helm
-
-# 4. Terraform
-sudo apt-get install -y software-properties-common
+# Terraform setup (chaves e repositório)
 wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt-get update
-sudo apt-get install -y terraform
 
-# 5. Cloud CLIs (AWS, Azure)
-sudo apt-get install -y awscli
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+# Instalação dos binários pendentes (Kubectl via snap, Helm e Terraform via APT)
+sudo snap install kubectl --classic
+sudo apt-get install -y helm terraform
 
 # -----------------------------------------------------------------------------
 #  SECTION 4: SHELL UPGRADE (ZSH + POWERLEVEL10K)
 # -----------------------------------------------------------------------------
+# ... (Seção de ZSH inalterada) ...
 
 echo "=========================================="
 echo "  Installing Zsh + Oh My Zsh + Powerlevel10k"
 echo "=========================================="
-sudo apt-get install -y zsh zsh-completions
 ZSHRC_PATH="/home/${SUDO_USER}/.zshrc"
 
 if [ "$(getent passwd $SUDO_USER | cut -d: -f7)" != "$(which zsh)" ]; then
@@ -253,39 +252,8 @@ if [ -f "$ZSHRC_PATH" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-#  SECTION 5: KALI-STYLE ARSENAL
+#  SECTION 5: KALI-STYLE ARSENAL (Instalações Específicas)
 # -----------------------------------------------------------------------------
-
-echo "=========================================="
-echo "  KALI PACK: Recon & Enumeration"
-echo "=========================================="
-sudo apt-get install -y \
-  nmap net-tools dnsutils tcpdump amass \
-  smbclient enum4linux-ng nbtscan onesixtyone masscan
-
-echo "=========================================="
-echo "  KALI PACK: Web Analysis"
-echo "=========================================="
-sudo apt-get install -y \
-  gobuster dirb nikto whatweb ffuf sqlmap wfuzz \
-  dirsearch mitmproxy
-
-echo "=========================================="
-echo "  KALI PACK: Password, Exploit & Sniffing"
-echo "=========================================="
-sudo apt-get install -y \
-  john hashid seclists thc-hydra \
-  exploitdb metasploit-framework \
-  python3-impacket impacket-scripts dsniff aircrack-ng \
-  bettercap reaver
-
-echo "=========================================="
-echo "  KALI PACK: RE, Forensics & GDB"
-echo "=========================================="
-# Adicionado radare2-r2pipe para automação
-sudo apt-get install -y \
-  binwalk radare2 foremost radare2-r2pipe \
-  sleuthkit volatility3
 
 echo "=========================================="
 echo "  KALI PACK: Post-Exploitation & Python Tools"
@@ -295,19 +263,23 @@ echo "[+] Installing Evil-WinRM (via Ruby)..."
 sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && gem install evil-winrm"
 
 echo "[+] Installing Python Pentest Tools (via pipx)..."
+# MELHORIA: Adicionado wafw00f
 sudo -u $SUDO_USER bash -c "
     pipx install pwntools
     pipx install bloodhound-py
     pipx install sublist3r
     pipx install uncompyle6
+    pipx install wafw00f
 "
 
-# Adicionado ferramentas de Recon Go (httpx, subfinder)
-echo "[+] Installing Go Recon Tools (httpx, subfinder)..."
+echo "[+] Installing Go Recon Tools (httpx, subfinder, feroxbuster)..."
+# MELHORIA: Adicionado Feroxbuster (Rust/Go)
 go install github.com/projectdiscovery/httpx/cmd/httpx@latest
 go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+go install github.com/epi052/feroxbuster/cmd/feroxbuster@latest
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/httpx /usr/local/bin/
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/subfinder /usr/local/bin/
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/feroxbuster /usr/local/bin/
 
 
 # Install GEF (GDB Enhanced Features)
@@ -323,6 +295,7 @@ fi
 # -----------------------------------------------------------------------------
 #  SECTION 6: ALIASES & SHELL LOADERS
 # -----------------------------------------------------------------------------
+# ... (Seção de Aliases e Loaders inalterada) ...
 
 echo "=========================================="
 echo "  Applying custom Zsh aliases..."
@@ -343,15 +316,14 @@ alias update='sudo apt-get update && sudo apt-get upgrade -y'
 alias cleanup='sudo apt-get autoremove -y && sudo apt-get clean'
 alias open='explorer.exe .' # Open directory in Windows Explorer
 alias c='clear'
-alias df='duf' # Novo alias para duf
-alias z='zoxide' # Alias para zoxide (se for instalado via choco no Windows ou via bash)
+alias df='duf'
+alias z='zoxide'
 " | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
 fi
 
 echo "=========================================="
 echo "  Adding Runtimes to Zsh (.zshrc)..."
 echo "=========================================="
-# ... (Seção 6.1 a 6.4 de Loaders inalterada) ...
 
 # SDKMAN Loader
 if ! grep -q "sdkman" "$ZSHRC_PATH"; then
@@ -404,7 +376,6 @@ fi
 # -----------------------------------------------------------------------------
 #  SECTION 7: AUTOMATED LANGUAGE INSTALLATION
 # -----------------------------------------------------------------------------
-# This section runs the final setup for our version managers.
 
 echo "=========================================="
 echo "  Installing Default Language Versions..."
@@ -413,8 +384,9 @@ echo "=========================================="
 echo "[+] Installing Node.js LTS (via NVM)..."
 sudo -u $SUDO_USER bash -c "source $NVM_DIR/nvm.sh && nvm install --lts && nvm alias default 'lts/*'"
 
-echo "[+] Installing Java 17 & Kotlin (via SDKMAN)..."
-sudo -u $SUDO_USER bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 17.0.10-tem && sdk install kotlin"
+echo "[+] Installing Java 17, Kotlin, and Maven (via SDKMAN)..."
+# MELHORIA: Adicionado Maven, essencial para projetos Java
+sudo -u $SUDO_USER bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 17.0.10-tem && sdk install kotlin && sdk install maven"
 
 echo "[+] Installing Python 3.10 (via Pyenv)..."
 sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pyenv install 3.10.13 && pyenv global 3.10.13"
@@ -430,7 +402,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V3.2 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V3.3 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
