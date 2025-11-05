@@ -189,7 +189,7 @@ try {
         New-Item -Path $ProfileDir -ItemType Directory -Force | Out-Null
     }
 
-    $OmpLine = "oh-my-posh init pwsh --config 'https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/jandedobbeleer.json' | Invoke-Expression"
+    $OmpLine = "oh-my-posh init pwsh | Invoke-Expression"
     
     $FileContent = if (Test-Path $ProfilePath) { Get-Content $ProfilePath } else { $null }
     
