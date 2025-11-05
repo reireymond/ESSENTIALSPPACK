@@ -2,15 +2,14 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 3.3 (Max Speed, Set -e, Maven, Composer, Feroxbuster)
+#  Version 3.4 (Novas Linguagens: Dart, Scala, Elixir, Erlang, TypeScript)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #  Features:
 #  - QoL: Zsh + P10k, eza, bat, fzf, fd, duf.
-#  - Runtimes: SDKMAN (Java/Kotlin), NVM (Node), Pyenv (Python),
-#              Rbenv (Ruby), Go, Rust, PHP, Lua, .NET.
+#  - Runtimes: SDKMAN (Java/Kotlin/Scala/Dart/Elixir), NVM (Node), Pyenv, etc.
 #  - DevOps: Docker, Kubectl, Helm, Terraform, AWS, Azure, Lazydocker.
-#  - Pentest: Kali-Linux toolset + GDB Enhanced Features (GEF) + Go Recon Tools.
+#  - Pentest: Kali-Linux toolset + Go Recon Tools.
 #
 # =============================================================================
 
@@ -36,7 +35,6 @@ sudo apt-get upgrade -y
 echo "=========================================="
 echo "  Installing All Core APT Packages (One Batch for Speed)"
 echo "=========================================="
-# MELHORIA: Todos os apt-get foram combinados em um único comando grande
 sudo apt-get install -y \
   # Core Build Tools & Debugging (C/C++)
   build-essential gdb valgrind binutils \
@@ -47,7 +45,6 @@ sudo apt-get install -y \
   # Runtimes via APT
   golang-go lua5.4 \
   php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath \
-  # MELHORIA: Adicionado Composer para PHP
   php-composer \
   # Terminal QoL
   tmux htop bat eza tldr \
@@ -96,7 +93,7 @@ fi
 sudo apt-get install -y dotnet-sdk-8.0
 
 echo "=========================================="
-echo "  Installing SDKMAN (for Java, Kotlin, etc.)"
+echo "  Installing SDKMAN (for Java, Kotlin, Scala, Dart, Elixir, etc.)"
 echo "=========================================="
 # Install SDKMAN
 if [ ! -d "/home/${SUDO_USER}/.sdkman" ]; then
@@ -149,12 +146,12 @@ echo "  Setting up Local Webserver (Nginx)"
 echo "=========================================="
 sudo apt-get install -y nginx
 
-# Fix 'fd' command name on Ubuntu
+# Fix 'fd' command name on Ubuntu (ignora erro se o arquivo não existir)
 if [ ! -L /usr/bin/fd ]; then
   sudo rm -f /usr/bin/fd || true
   sudo ln -s /usr/bin/fdfind /usr/bin/fd
 fi
-# Fix 'bat' command name on Ubuntu
+# Fix 'bat' command name on Ubuntu (ignora erro se o arquivo não existir)
 if [ ! -L /usr/bin/bat ]; then
   sudo rm -f /usr/bin/bat || true
   sudo ln -s /usr/bin/batcat /usr/bin/bat
@@ -173,7 +170,6 @@ echo "  Installing Cloud & Infra Tools"
 echo "=========================================="
 
 # Docker setup (chaves e repositório)
-# Não precisa de apt-get install, pois já foi incluído no batch da Seção 1
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -207,7 +203,6 @@ sudo apt-get install -y helm terraform
 # -----------------------------------------------------------------------------
 #  SECTION 4: SHELL UPGRADE (ZSH + POWERLEVEL10K)
 # -----------------------------------------------------------------------------
-# ... (Seção de ZSH inalterada) ...
 
 echo "=========================================="
 echo "  Installing Zsh + Oh My Zsh + Powerlevel10k"
@@ -263,7 +258,6 @@ echo "[+] Installing Evil-WinRM (via Ruby)..."
 sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && gem install evil-winrm"
 
 echo "[+] Installing Python Pentest Tools (via pipx)..."
-# MELHORIA: Adicionado wafw00f
 sudo -u $SUDO_USER bash -c "
     pipx install pwntools
     pipx install bloodhound-py
@@ -273,7 +267,6 @@ sudo -u $SUDO_USER bash -c "
 "
 
 echo "[+] Installing Go Recon Tools (httpx, subfinder, feroxbuster)..."
-# MELHORIA: Adicionado Feroxbuster (Rust/Go)
 go install github.com/projectdiscovery/httpx/cmd/httpx@latest
 go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 go install github.com/epi052/feroxbuster/cmd/feroxbuster@latest
@@ -295,7 +288,6 @@ fi
 # -----------------------------------------------------------------------------
 #  SECTION 6: ALIASES & SHELL LOADERS
 # -----------------------------------------------------------------------------
-# ... (Seção de Aliases e Loaders inalterada) ...
 
 echo "=========================================="
 echo "  Applying custom Zsh aliases..."
@@ -381,12 +373,27 @@ echo "=========================================="
 echo "  Installing Default Language Versions..."
 echo "=========================================="
 
-echo "[+] Installing Node.js LTS (via NVM)..."
-sudo -u $SUDO_USER bash -c "source $NVM_DIR/nvm.sh && nvm install --lts && nvm alias default 'lts/*'"
+echo "[+] Installing Node.js LTS (via NVM) and TypeScript (Global)..."
+sudo -u $SUDO_USER bash -c "
+    source $NVM_DIR/nvm.sh && 
+    nvm install --lts && 
+    nvm alias default 'lts/*' &&
+    # Instalação global do TypeScript Compiler
+    npm install -g typescript
+"
 
-echo "[+] Installing Java 17, Kotlin, and Maven (via SDKMAN)..."
-# MELHORIA: Adicionado Maven, essencial para projetos Java
-sudo -u $SUDO_USER bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 17.0.10-tem && sdk install kotlin && sdk install maven"
+echo "[+] Installing Java 17, Kotlin, Scala, Dart, Elixir/Erlang, and Maven (via SDKMAN)..."
+# MELHORIA: Adicionado Scala, Dart, Elixir, Erlang e Gradle/Maven
+sudo -u $SUDO_USER bash -c "
+    source $HOME/.sdkman/bin/sdkman-init.sh && 
+    sdk install java 17.0.10-tem && 
+    sdk install kotlin &&
+    sdk install maven &&
+    sdk install dart &&
+    sdk install scala &&
+    sdk install erlang &&
+    sdk install elixir
+"
 
 echo "[+] Installing Python 3.10 (via Pyenv)..."
 sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pyenv install 3.10.13 && pyenv global 3.10.13"
@@ -402,7 +409,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V3.3 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V3.4 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
