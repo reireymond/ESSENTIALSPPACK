@@ -140,6 +140,7 @@ echo "=========================================="
 sudo apt-get install -y \
   tmux htop bat eza tldr \
   jq fzf ripgrep ncdu
+  neovim
 
 # Fix 'bat' command name on Ubuntu
 if [ ! -L /usr/bin/bat ]; then
@@ -163,7 +164,9 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
-sudo apt-get install -y docker-ce-cli docker-buildx-plugin
+sudo apt-get install -y docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin
+echo "[+] Adding $SUDO_USER to the 'docker' group..."
+sudo usermod -aG docker $SUDO_USER
 
 # 3. Helm (Kubernetes Package Manager)
 curl https://baltocdn.com/helm/signing.asc | sudo gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
@@ -260,6 +263,18 @@ echo "=========================================="
 sudo apt-get install -y \
   binwalk radare2 foremost
 
+echo "=========================================="
+echo "  KALI PACK: Post-Exploitation & AD"
+echo "=========================================="
+# evil-winrm
+sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && gem install evil-winrm"
+
+# bloodhound-py
+sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pip install bloodhound-py"
+
+# reverse engeenering
+sudo pip3 install uncompyle6
+
 # Install GEF (GDB Enhanced Features)
 if [ ! -f "/home/${SUDO_USER}/.gdbinit-gef.py" ]; then
     echo "Installing GEF for GDB..."
@@ -344,6 +359,27 @@ fi
 export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"
 ' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
 fi
+
+# -----------------------------------------------------------------------------
+#  SECTION 7: AUTOMATED LANGUAGE INSTALLATION
+# -----------------------------------------------------------------------------
+# This section runs the final setup for our version managers.
+
+echo "=========================================="
+echo "  Installing Default Language Versions..."
+echo "=========================================="
+
+echo "[+] Installing Node.js LTS (via NVM)..."
+sudo -u $SUDO_USER bash -c "source $NVM_DIR/nvm.sh && nvm install --lts && nvm alias default 'lts/*'"
+
+echo "[+] Installing Java 17 & Kotlin (via SDKMAN)..."
+sudo -u $SUDO_USER bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 17.0.10-tem && sdk install kotlin"
+
+echo "[+] Installing Python 3.10 (via Pyenv)..."
+sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pyenv install 3.10.13 && pyenv global 3.10.13"
+
+echo "[+] Installing Ruby 3.2.2 (via Rbenv)..."
+sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && rbenv install 3.2.2 && rbenv global 3.2.2"
 
 # --- FINAL CLEANUP ---
 echo "=========================================="
