@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.5 (Full automated build with all fixes)
+    Version: 2.6 (Final fix for --pre flags and PowerShell module scope error)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -166,7 +166,7 @@ Write-Host "[+] Upgrading Hardware Diagnostics & Benchmark Kit..." -ForegroundCo
 # REMOVED: 'msiafterburner' (pacote Choco quebrado, link de download negado)
 $batch8 = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
 choco upgrade $batch8 -y
-Write-Host "NOTE: 'msiafterburner' foi removido pois o pacote Choco está quebrado. Instale-o manually." -ForegroundColor Gray
+Write-Host "NOTE: 'msiafterburner' foi removido pois o pacote Choco está quebrado. Instale-o manualmente." -ForegroundColor Gray
 
 # 5.9: Productivity & Communication
 Write-Host "[+] Upgrading Communication Tools..." -ForegroundColor Cyan
@@ -214,11 +214,11 @@ Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
 Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
     Write-Host "[+] Installing 'Terminal-Icons' module..."
-    # FIXED: Garante que o provedor NuGet está instalado
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser -Confirm:$false
+    # FIXED: Removido '-Scope' do Install-PackageProvider (causou erro)
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
     # FIXED: Define o PSGallery como confiável para evitar prompts
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -Scope CurrentUser
-    # FIXED: Instala o módulo
+    # Instala o módulo
     Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ErrorAction Stop
 
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
@@ -249,7 +249,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # --- Productivity Pack End ---
 "@
     
-    $FileContent = if (Test-Path $ProfilePath) { Get-Content $ProfilePath -Raw } else { "" }
+    $FileContent = if (Test-Path $ProfilePath) { Get-Content $Path $ProfilePath -Raw } else { "" }
 
     $Marker = "# --- Productivity Pack Start ---"
     
@@ -372,11 +372,11 @@ Write-Host ""
 
 Write-Host "[+] Installing/Checking 'PSWindowsUpdate' module..." -ForegroundColor Cyan
 try {
-    # FIXED: Garante que o provedor NuGet está instalado
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser -Confirm:$false
+    # FIXED: Removido '-Scope' do Install-PackageProvider (causou erro)
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
     # FIXED: Define o PSGallery como confiável para evitar prompts
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -Scope CurrentUser
-    # FIXED: Instala o módulo
+    # Instala o módulo
     Install-Module -Name PSWindowsUpdate -Force -AcceptLicense -Confirm:$false
     Import-Module PSWindowsUpdate -Force
     
