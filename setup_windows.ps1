@@ -189,11 +189,13 @@ choco upgrade $batch11a -y
 
 # 5.12: CYBERSECURITY & PENTESTING (Host) (FIXED IDs)
 Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
-# REMOVED: 'zap' (instalador silencioso falha)
-# FIXED: 'burpsuite-community' alterado para 'burp-suite-free-edition'. Não precisa mais do --pre.
-$batch12 = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
+# MODIFIED: Added zap (per user request), ilspy, cff-explorer, and volatility3
+$batch12 = @(
+    "nmap", "wireshark", "burp-suite-free-edition", "ghidra", POST,
+    "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty",
+    "zap", "ilspy", "cff-explorer-suite", "volatility3"
+)
 choco upgrade $batch12 -y --ignore-http-cache
-Write-Host "NOTE: 'zap' (OWASP ZAP) foi removido pois o instalador silencioso do Choco está falhando. Instale-o manualmente." -ForegroundColor Gray
 Write-Host "[+] Upgrading HTTP Debugging Proxy (Fiddler)..." -ForegroundColor Magenta
 choco upgrade fiddler-classic -y
 
