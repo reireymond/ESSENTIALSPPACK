@@ -69,7 +69,7 @@ try {
     Write-Host "============================================================"
     Write-Host "WSL 2 has been installed."
     Write-Host "PLEASE RESTART YOUR COMPUTER NOW."
-    Write-Host "After rebooting, run this 'setup.ps1' script again."
+    Write-Host "After rebooting, run this 'setup_windows.ps1' script again."
     Write-Host "The installation will continue from where it left off."
     Write-Host "============================================================"
     Read-Host "Press ENTER to close and restart your PC..."
