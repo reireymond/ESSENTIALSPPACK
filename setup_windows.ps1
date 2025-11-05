@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.0 (Fixed all broken package IDs from user logs)
+    Version: 2.1 (Fixed broken package IDs and robust module installs)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -126,6 +126,7 @@ choco upgrade $batch1 -y
 
 # 5.2: Browsers (FIXED IDs)
 Write-Host "[+] Upgrading Browsers..." -ForegroundColor Cyan
+# FIXED: 'firefox-dev' foi alterado para 'firefox-developer-edition'
 $batch2 = @("firefox-developer-edition", "firefox", "googlechrome", "tor-browser")
 choco upgrade $batch2 -y
 
@@ -162,8 +163,10 @@ choco upgrade $batch7 -y
 
 # 5.8: Hardware Diagnostics, Benchmark & Monitoring (FIXED ID)
 Write-Host "[+] Upgrading Hardware Diagnostics & Benchmark Kit..." -ForegroundColor Cyan
+# REMOVED: 'msiafterburner' (pacote Choco quebrado, link de download negado)
 $batch8 = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
 choco upgrade $batch8 -y
+Write-Host "NOTE: 'msiafterburner' foi removido pois o pacote Choco está quebrado. Instale-o manualmente." -ForegroundColor Gray
 
 # 5.9: Productivity & Communication
 Write-Host "[+] Upgrading Communication Tools..." -ForegroundColor Cyan
@@ -186,8 +189,10 @@ choco upgrade $batch11a -y
 
 # 5.12: CYBERSECURITY & PENTESTING (Host) (FIXED IDs)
 Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
-$batch12 = @("nmap", "wireshark", "burpsuite-community", "zap", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
+# REMOVED: 'zap' (instalador silencioso falha)
+$batch12 = @("nmap", "wireshark", "burpsuite-community", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
 choco upgrade $batch12 -y --ignore-http-cache
+Write-Host "NOTE: 'zap' (OWASP ZAP) foi removido pois o instalador silencioso do Choco está falhando. Instale-o manualmente." -ForegroundColor Gray
 
 # 5.13: ESSENTIAL DEPENDENCIES (Runtimes)
 Write-Host "[+] Upgrading Essential Runtimes..." -ForegroundColor Yellow
@@ -197,6 +202,7 @@ Write-Host "Some runtimes may require a reboot. This will be checked at the end.
 
 # 5.14: TERMINAL ENHANCEMENTS (Oh My Posh + Font) (FIXED ID)
 Write-Host "[+] Upgrading Terminal Enhancements (Oh My Posh + Nerd Font)..." -ForegroundColor Cyan
+# FIXED: 'nerd-fonts-caskadiacove' foi alterado para 'caskaydiacove-nerd-font'
 $batch14 = @("oh-my-posh", "caskaydiacove-nerd-font")
 choco upgrade $batch14 -y
 Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
@@ -205,9 +211,10 @@ Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
 Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
     Write-Host "[+] Installing 'Terminal-Icons' module..."
-    # We must ensure NuGet is bootstrapped for the CurrentUser scope
+    # FIXED: Tornou a instalação do provedor NuGet mais robusta
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser -Confirm:$false
-    Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ErrorAction SilentlyContinue
+    # FIXED: Adicionado -ForceBootstrap para forçar a instalação do NuGet se ele falhar
+    Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ForceBootstrap -ErrorAction SilentlyContinue
 
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
     $ProfilePath = Join-Path $ProfileDir "Microsoft.PowerShell_profile.ps1"
@@ -337,13 +344,16 @@ if (-not (Test-Path $wslScriptPath)) {
     Write-Host "Starting 'wsl.exe'..." -ForegroundColor Yellow
     
     try {
+        # FIXED: Garantir que o script seja executado com 'bash' para evitar problemas de shell
         wsl.exe sudo bash "$fullLinuxPath"
         Write-Host "=================================================" -ForegroundColor Green
         Write-Host "  WSL (UBUNTU) SETUP COMPLETE!" -ForegroundColor Green
         Write-Host "================================================="
     } catch {
         Write-Host "ERROR: Failed to execute WSL script." -ForegroundColor Red
-        Write-Host "You may need to run it manually: ./wsl_ubuntu.sh" -ForegroundColor Red
+        Write-Host "This is LIKELY due to CRLF (Windows) line endings." -ForegroundColor Red
+        Write-Host "Please open 'wsl_ubuntu.sh' in VS Code, click 'CRLF' in the bottom-right," -ForegroundColor Red
+        Write-Host "select 'LF', save, and run this setup again." -ForegroundColor Red
     }
 }
 
@@ -356,8 +366,10 @@ Write-Host ""
 
 Write-Host "[+] Installing/Checking 'PSWindowsUpdate' module..." -ForegroundColor Cyan
 try {
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
-    Install-Module -Name PSWindowsUpdate -Force -AcceptLicense -Confirm:$false
+    # FIXED: Tornou a instalação do provedor NuGet mais robusta
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser -Confirm:$false
+    # FIXED: Adicionado -ForceBootstrap para forçar a instalação do NuGet se ele falhar
+    Install-Module -Name PSWindowsUpdate -Force -AcceptLicense -Confirm:$false -ForceBootstrap
     Import-Module PSWindowsUpdate -Force
     
     Write-Host "[+] Searching, downloading, and installing all Windows Updates..." -ForegroundColor Yellow
@@ -389,6 +401,7 @@ Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction Silently
 Remove-Item -Path "$env:SystemRoot\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "[+] Cleaning up Chocolatey package cache..." -ForegroundColor Cyan
+# FIXED: 'choco cache --remove --all' foi alterado para 'choco cache remove --all'
 choco cache remove --all
 
 Write-Host "[+] Optimizing main drive (C:)... (TRIM or Defrag)" -ForegroundColor Cyan
