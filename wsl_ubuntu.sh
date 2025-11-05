@@ -1,18 +1,19 @@
 #!/bin/bash
+# =============================================================================
+#
+#  Essential's Pack - WSL (Ubuntu) Setup Script
+#  Version 2.0 (Kali-fy & Powerlevel10k)
+#
+#  This script installs a complete Development and Pentest environment,
+#  combining QoL, modern Runtimes, and a Kali Linux-inspired
+#  arsenal of tools.
+#
+#  CRITICAL: This file MUST be saved with (LF) line endings.
+#
+# =============================================================================
 
-# =============================================================================
-#
-#  Setup Script for WSL (Ubuntu) - Version 1.8 (Fixed package names)
-#
-#  Installs the C/C++ development environment (build-essential),
-#  a suite of pentesting tools (Kali-like),
-#  terminal QoL utilities, DevOps tools (kubectl),
-#  enhances the terminal with Zsh + Oh My Zsh,
-#  and applies custom aliases idempotently.
-#
-#  CRITICAL: This file MUST be saved with Unix (LF) line endings, not (CRLF).
-#
-# =============================================================================
+# Ensures the script is non-interactive (won't ask questions)
+export DEBIAN_FRONTEND=noninteractive
 
 # Request administrator (sudo) privileges at the start
 sudo -v
@@ -21,83 +22,111 @@ sudo -v
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 echo "=========================================="
-echo "  Updating System (apt update/upgrade)..."
+echo "  Updating System (apt-get update/upgrade)..."
 echo "=========================================="
-sudo apt update
-sudo apt upgrade -y
+sudo apt-get update
+sudo apt-get upgrade -y
+
+# -----------------------------------------------------------------------------
+#  SECTION 1: DEVELOPMENT PACKAGES
+# -----------------------------------------------------------------------------
 
 echo "=========================================="
 echo "  Installing Development Pack (C/C++, Java, Python, Shell)"
 echo "=========================================="
-# build-essential includes: gcc, g++, make
-sudo apt install -y build-essential gdb valgrind binutils
-sudo apt install -y default-jdk      # Java (JDK)
-sudo apt install -y python3-pip python3-venv # Python
-sudo apt install -y shellcheck       # Shell script linter
+# build-essential (gcc, g++, make), gdb (debugger), valgrind (memory)
+# binutils (binary tools), default-jdk (Java)
+# python3-pip (pip manager), python3-venv (virtual envs)
+# shellcheck (shell linter)
+sudo apt-get install -y \
+  build-essential gdb valgrind binutils \
+  default-jdk \
+  python3-pip python3-venv \
+  shellcheck
 
 echo "=========================================="
-echo "  Installing Terminal QoL (Quality of Life) Utilities"
+echo "  Installing Additional Runtimes (Go, Rust, Node.js)"
 echo "=========================================="
-# tmux (multiplexer), htop (monitor), bat (cat w/ colors)
-# FIXED: 'exa' foi substituído por 'eza' (substituto moderno)
-# FIXED: 'tldr' (pacote principal)
-sudo apt install -y tmux htop bat eza tldr
+
+# Install Go (Google's Language)
+sudo apt-get install -y golang-go
+
+# Install Rust (Systems Language)
+if ! command -v rustup &> /dev/null; then
+    echo "Installing Rust (rustup)..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    # Add Rust to the current shell's PATH
+    source "$HOME/.cargo/env"
+fi
+
+# Install NVM (Node Version Manager) - ESSENTIAL for JS dev
+export NVM_DIR="/home/${SUDO_USER}/.nvm"
+if [ ! -d "$NVM_DIR" ]; then
+    echo "Installing NVM (Node Version Manager)..."
+    # Installs NVM
+    sudo -u $SUDO_USER curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | sudo -u $SUDO_USER bash
+else
+    echo "NVM is already installed. Skipping."
+fi
+
+# -----------------------------------------------------------------------------
+#  SECTION 2: TERMINAL QOL & DEVOPS
+# -----------------------------------------------------------------------------
+
+echo "=========================================="
+echo "  Installing Terminal QoL (Utilities)"
+echo "=========================================="
+# tmux (multiplexer), htop (monitor), bat (cat with colors)
+# eza (ls replacement), tldr (simplified man pages)
+# jq (the 'sed' for JSON), fzf (fuzzy finder), ripgrep (fast grep)
+# ncdu (disk usage analyzer)
+sudo apt-get install -y \
+  tmux htop bat eza tldr \
+  jq fzf ripgrep ncdu
 
 # Fix 'bat' command name on Ubuntu (batcat -> bat)
-# Remove link if it exists (to prevent error) and create the new one
 if [ ! -L /usr/bin/bat ]; then
   sudo rm -f /usr/bin/bat
   sudo ln -s /usr/bin/batcat /usr/bin/bat
 fi
 
 echo "=========================================="
-echo "  Installing Network & Enumeration Tools"
+echo "  Installing DevOps Tools (Docker, Kubectl, Helm)"
 echo "=========================================="
-# net-tools (for ifconfig, etc.), smbclient (Windows pentest)
-# masscan (ultra-fast port scanner)
-# FIXED: 'enum4linux' foi substituído por 'enum4linux-ng' (moderno)
-sudo apt install -y net-tools smbclient enum4linux-ng nbtscan onesixtyone masscan
 
-echo "=========================================="
-echo "  Installing Web Analysis Tools"
-echo "=========================================="
-# gobuster (directory brute-force), nikto (vulnerability scanner)
-# ffuf (fast web fuzzer), sqlmap (SQL injection tool)
-sudo apt install -y gobuster dirb nikto whatweb ffuf sqlmap
-
-echo "=========================================="
-echo "  Installing Password Tools & Wordlists"
-echo "=========================================="
-# john the ripper, hashid (hash identifier), seclists (BEST wordlists)
-# FIXED: 'hydra' foi substituído por 'thc-hydra' (nome correto do pacote)
-sudo apt install -y john hashid seclists thc-hydra
-
-echo "=========================================="
-echo "  Installing Exploit, RE & Forensics Tools"
-echo "=========================================="
-# FIXED: 'searchsploit' é incluído no pacote 'exploitdb'
-# binwalk (firmware & file analysis)
-# radare2 (reverse engineering)
-# foremost (forensics, file carving)
-# metasploit-framework (Exploitation framework)
-sudo apt install -y exploitdb binwalk radare2 foremost metasploit-framework
-
-echo "=========================================="
-echo "  Installing DevOps Tools (Kubernetes)"
-echo "=========================================="
-# kubectl (Kubernetes cluster manager)
-# Install via snap, the recommended method on Ubuntu
+# 1. Kubectl (Kubernetes manager)
 sudo snap install kubectl --classic
 
+# 2. Docker CLI (to connect to Docker Desktop on Windows)
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+# Install ONLY the client (CLI) and buildx
+sudo apt-get install -y docker-ce-cli docker-buildx-plugin
+
+# 3. Helm (Kubernetes Package Manager)
+curl https://baltocdn.com/helm/signing.asc | sudo gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install -y helm
+
+# -----------------------------------------------------------------------------
+#  SECTION 3: SHELL UPGRADE (ZSH + POWERLEVEL10K)
+# -----------------------------------------------------------------------------
+
 echo "=========================================="
-echo "  Installing Zsh + Oh My Zsh (Terminal Upgrade)"
+echo "  Installing Zsh + Oh My Zsh + Powerlevel10k"
 echo "=========================================="
 
-# Install Zsh
-sudo apt install -y zsh
+# Install Zsh and zsh-completions (BETTER AUTOCOMPLETE)
+sudo apt-get install -y zsh zsh-completions
 
 # Set Zsh as the default shell for the user (if not already set)
-# $SUDO_USER is the user who *ran* sudo
 if [ "$(getent passwd $SUDO_USER | cut -d: -f7)" != "$(which zsh)" ]; then
     echo "Setting Zsh as default shell for $SUDO_USER..."
     sudo chsh -s $(which zsh) $SUDO_USER
@@ -121,24 +150,84 @@ echo "Installing Zsh plugins (autosuggestions and syntax-highlighting)..."
 ZSH_CUSTOM_PLUGINS="/home/${SUDO_USER}/.oh-my-zsh/custom/plugins"
 if [ ! -d "$ZSH_CUSTOM_PLUGINS/zsh-autosuggestions" ]; then
     sudo -u $SUDO_USER git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM_PLUGINS/zsh-autosuggestions
-else
-    echo "zsh-autosuggestions plugin already installed. Skipping."
 fi
 if [ ! -d "$ZSH_CUSTOM_PLUGINS/zsh-syntax-highlighting" ]; then
     sudo -u $SUDO_USER git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM_PLUGINS/zsh-syntax-highlighting
-else
-    echo "zsh-syntax-highlighting plugin already installed. Skipping."
 fi
 
-# Robustly enable plugins in .zshrc
-if grep -q "plugins=(git)" "$ZSHRC_PATH"; then
-    echo "Enabling Zsh plugins..."
-    sudo -u $SUDO_USER sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' "$ZSHRC_PATH"
+echo "Installing Powerlevel10k Theme (P10k)..."
+P10K_PATH="/home/${SUDO_USER}/.oh-my-zsh/custom/themes/powerlevel10k"
+if [ ! -d "$P10K_PATH" ]; then
+    sudo -u $SUDO_USER git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_PATH"
 else
-    echo "Could not find default 'plugins=(git)' line. Plugins must be added manually."
+    echo "Powerlevel10k theme already installed. Skipping."
 fi
 
-# --- ADDING CUSTOM ALIASES (Idempotent) ---
+# Enable plugins and P10k theme in .zshrc
+if [ -f "$ZSHRC_PATH" ]; then
+    # Enable Plugins (git, suggestions, highlight, completions)
+    if grep -q "plugins=(git)" "$ZSHRC_PATH"; then
+        echo "Enabling Zsh plugins..."
+        sudo -u $SUDO_USER sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-completions)/' "$ZSHRC_PATH"
+    fi
+    # Set the Powerlevel10k theme
+    if grep -q 'ZSH_THEME="robbyrussell"' "$ZSHRC_PATH"; then
+        echo "Setting Powerlevel10k theme..."
+        sudo -u $SUDO_USER sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="powerlevel10k\/powerlevel10k"/' "$ZSHRC_PATH"
+    fi
+fi
+
+# -----------------------------------------------------------------------------
+#  SECTION 4: KALI-STYLE ARSENAL
+# -----------------------------------------------------------------------------
+
+echo "=========================================="
+echo "  KALI PACK: Recon & Enumeration"
+echo "=========================================="
+# nmap (network scanner), net-tools (ifconfig), dnsutils (dig)
+# tcpdump (sniffer), amass (subdomain enum)
+# smbclient (Windows pentest), enum4linux-ng (Windows enum)
+# nbtscan (NetBIOS scan), onesixtyone (SNMP scanner)
+# masscan (fast scanner)
+sudo apt-get install -y \
+  nmap net-tools dnsutils tcpdump amass \
+  smbclient enum4linux-ng nbtscan onesixtyone masscan
+
+echo "=========================================="
+echo "  KALI PACK: Web Analysis"
+echo "=========================================="
+# gobuster (directory fuzzer), dirb (fuzzer)
+# nikto (web scanner), whatweb (web fingerprint)
+# ffuf (fast fuzzer), sqlmap (SQL injection)
+# wfuzz (web fuzzer)
+sudo apt-get install -y \
+  gobuster dirb nikto whatweb ffuf sqlmap wfuzz
+
+echo "=========================================="
+echo "  KALI PACK: Password, Exploit & Sniffing"
+echo "=========================================="
+# john (John the Ripper), hashid (hash identifier)
+# seclists (wordlists), thc-hydra (brute force)
+# exploitdb (searchsploit), metasploit-framework
+# impacket-scripts (AD/Windows pentest), dsniff (arpspoof)
+# aircrack-ng (Wi-Fi analysis)
+sudo apt-get install -y \
+  john hashid seclists thc-hydra \
+  exploitdb metasploit-framework \
+  python3-impacket impacket-scripts dsniff aircrack-ng
+
+echo "=========================================="
+echo "  KALI PACK: RE & Forensics"
+echo "=========================================="
+# binwalk (firmware analysis), radare2 (reverse engineering)
+# foremost (file carving)
+sudo apt-get install -y \
+  binwalk radare2 foremost
+
+# -----------------------------------------------------------------------------
+#  SECTION 5: ALIASES & CLEANUP
+# -----------------------------------------------------------------------------
+
 echo "=========================================="
 echo "  Applying custom Zsh aliases..."
 echo "=========================================="
@@ -148,32 +237,49 @@ ALIAS_MARKER="# --- Custom Aliases ---"
 if ! grep -q "$ALIAS_MARKER" "$ZSHRC_PATH"; then
     echo "Adding custom aliases to $ZSHRC_PATH..."
     # Appends custom aliases to the end of .zshrc
-    # We use 'tee -a' to append as the user, not as root
-    echo '
-# --- Custom Aliases ---
-alias ll="ls -alF"
-alias la="ls -A"
-alias l="ls -CF"
-alias update="sudo apt update && sudo apt upgrade -y"
-alias cleanup="sudo apt autoremove -y && sudo apt clean"
-alias open="explorer.exe ."
-' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
+    echo "
+$ALIAS_MARKER
+# Replace 'ls' with 'eza' (modern, with icons)
+alias ls='eza --icons --git'
+alias ll='eza -l --icons --git --all' # List all, long format
+alias lt='eza -T'                      # 'tree' mode
+
+# QoL
+alias update='sudo apt-get update && sudo apt-get upgrade -y'
+alias cleanup='sudo apt-get autoremove -y && sudo apt-get clean'
+alias open='explorer.exe .' # Open directory in Windows Explorer
+" | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
 else
     echo "Custom aliases already found in $ZSHRC_PATH. Skipping."
 fi
 
+# Add the NVM loader to .zshrc (if not already present)
+if ! grep -q "nvm.sh" "$ZSHRC_PATH"; then
+    echo "Adding NVM to $ZSHRC_PATH..."
+    echo '
+# --- NVM Loader ---
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
+fi
 
-# --- APT CLEANUP ---
+
+# --- FINAL CLEANUP ---
 echo "=========================================="
 echo "  Cleaning up APT cache and unused packages..."
 echo "=========================================="
-sudo apt autoremove -y
-sudo apt clean
+sudo apt-get autoremove -y
+sudo apt-get clean
 
 echo "=========================================="
 echo "  WSL (UBUNTU) SETUP COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
-echo "Please close and reopen your Ubuntu terminal for Zsh (the new shell) and new aliases to load correctly."
+echo "1. Please close and reopen your Ubuntu terminal."
+echo "2. The Powerlevel10k (p10k) wizard will run on first launch."
+echo "   - Answer 'y' (yes) if you see icons (like a diamond, lock)."
+echo "   - Choose your preferred look ('Rainbow', 'Lean' recommended)."
+echo "   - The 'nerd-fonts-cascadiacode' you installed on Windows should work perfectly."
 echo ""
