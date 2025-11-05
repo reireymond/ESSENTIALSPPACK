@@ -139,7 +139,7 @@ echo "  Installing Terminal QoL (Utilities)"
 echo "=========================================="
 sudo apt-get install -y \
   tmux htop bat eza tldr \
-  jq fzf ripgrep ncdu
+  jq fzf ripgrep ncdu \
   neovim
 
 # Fix 'bat' command name on Ubuntu
@@ -266,24 +266,6 @@ sudo apt-get install -y \
   binwalk radare2 foremost
 
 echo "=========================================="
-echo "  KALI PACK: Post-Exploitation & AD"
-echo "=========================================="
-# evil-winrm
-sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && gem install evil-winrm"
-# bloodhound-py
-sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pip install bloodhound-py"
-# reverse engeenering
-sudo pip3 install uncompyle6
-
-# Install GEF (GDB Enhanced Features)
-if [ ! -f "/home/${SUDO_USER}/.gdbinit-gef.py" ]; then
-    echo "Installing GEF for GDB..."
-    sudo -u $SUDO_USER bash -c "$(curl -fsSL https://gef.blah.cat/sh)"
-else
-    echo "GEF already installed. Skipping."
-fi
-
-echo "=========================================="
 echo "  KALI PACK: Post-Exploitation & Python Tools"
 echo "=========================================="
 
@@ -294,7 +276,18 @@ echo "[+] Installing Python Pentest Tools (pwntools, bloodhound, sublist3r)..."
 sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && \
     pip install pwntools && \
     pip install bloodhound-py && \
-    pip install sublist3r"
+    pip install sublist3r \
+    pip install uncompyle6"
+
+# Install GEF (GDB Enhanced Features)
+if [ ! -f "/home/${SUDO_USER}/.gdbinit-gef.py" ]; then
+    echo "Installing GEF for GDB..."
+    sudo -u $SUDO_USER bash -c "$(curl -fsSL https://gef.blah.cat/sh)"
+else
+    echo "GEF already installed. Skipping."
+fi
+
+
 
 # -----------------------------------------------------------------------------
 #  SECTION 6: ALIASES & SHELL LOADERS
@@ -410,11 +403,4 @@ echo "1. Please close and reopen your Ubuntu terminal."
 echo "2. The Powerlevel10k (p10k) wizard will run on first launch."
 echo "   - Answer 'y' (yes) if you see icons (like a diamond, lock)."
 echo "   - Choose your preferred look ('Rainbow', 'Lean' recommended)."
-echo ""
-echo "3. Run these commands to install default language versions:"
-echo -e "\033[0;32m   sdk install java 17.0.10-tem   \033[0m (or 21, 11...)"
-echo -e "\033[0;32m   sdk install kotlin             \033[0m"
-echo -e "\033[0;32m   nvm install --lts              \033[0m (Installs latest Node.js LTS)"
-echo -e "\033[0;32m   pyenv install 3.10             \033[0m (or 3.11, 3.12...)"
-echo -e "\033[0;32m   rbenv install 3.2.2            \033[0m (or latest...)"
 echo ""
