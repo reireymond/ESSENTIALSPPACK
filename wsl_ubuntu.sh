@@ -2,17 +2,19 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 2.0 (Kali-fy & Powerlevel10k)
+#  Version 3.0 (Multi-Language, DevOps & Kali-fy)
 #
-#  This script installs a complete Development and Pentest environment,
-#  combining QoL, modern Runtimes, and a Kali Linux-inspired
-#  arsenal of tools.
-#
-#  CRITICAL: This file MUST be saved with (LF) line endings.
+#  Installs a complete Development, DevOps, and Pentest environment.
+#  Features:
+#  - QoL: Zsh + P10k, eza, bat, fzf, etc.
+#  - Runtimes: SDKMAN (Java/Kotlin), NVM (Node), Pyenv (Python),
+#              Rbenv (Ruby), Go, Rust, PHP, Lua, .NET.
+#  - DevOps: Docker, Kubectl, Helm, Terraform, AWS, Azure.
+#  - Pentest: Kali-Linux toolset + GDB Enhanced Features (GEF).
 #
 # =============================================================================
 
-# Ensures the script is non-interactive (won't ask questions)
+# Ensures the script is non-interactive
 export DEBIAN_FRONTEND=noninteractive
 
 # Request administrator (sudo) privileges at the start
@@ -28,30 +30,34 @@ sudo apt-get update
 sudo apt-get upgrade -y
 
 # -----------------------------------------------------------------------------
-#  SECTION 1: DEVELOPMENT PACKAGES
+#  SECTION 1: CORE DEPENDENCIES & BUILD TOOLS
 # -----------------------------------------------------------------------------
 
 echo "=========================================="
-echo "  Installing Development Pack (C/C++, Java, Python, Shell)"
+echo "  Installing Core Build Tools (C/C++, Python, Shell)"
 echo "=========================================="
 # build-essential (gcc, g++, make), gdb (debugger), valgrind (memory)
-# binutils (binary tools), default-jdk (Java)
-# python3-pip (pip manager), python3-venv (virtual envs)
-# shellcheck (shell linter)
+# binutils (binary tools), shellcheck (shell linter)
+# Python3 build dependencies (for pyenv)
+# Ruby build dependencies (for rbenv)
 sudo apt-get install -y \
   build-essential gdb valgrind binutils \
-  default-jdk \
-  python3-pip python3-venv \
-  shellcheck
+  shellcheck \
+  libssl-dev libffi-dev libbz2-dev libreadline-dev libsqlite3-dev liblzma-dev \
+  autoconf bison patch libyaml-dev libtool
+
+# -----------------------------------------------------------------------------
+#  SECTION 2: RUNTIMES & VERSION MANAGERS
+# -----------------------------------------------------------------------------
 
 echo "=========================================="
-echo "  Installing Additional Runtimes (Go, Rust, Node.js)"
+echo "  Installing Go (Golang)"
 echo "=========================================="
-
-# Install Go (Google's Language)
 sudo apt-get install -y golang-go
 
-# Install Rust (Systems Language)
+echo "=========================================="
+echo "  Installing Rust (rustup)"
+echo "=========================================="
 if ! command -v rustup &> /dev/null; then
     echo "Installing Rust (rustup)..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -59,45 +65,96 @@ if ! command -v rustup &> /dev/null; then
     source "$HOME/.cargo/env"
 fi
 
-# Install NVM (Node Version Manager) - ESSENTIAL for JS dev
+echo "=========================================="
+echo "  Installing Lua"
+echo "=========================================="
+sudo apt-get install -y lua5.4
+
+echo "=========================================="
+echo "  Installing PHP (with common extensions)"
+echo "=========================================="
+sudo apt-get install -y php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath
+
+echo "=========================================="
+echo "  Installing .NET SDK (Microsoft)"
+echo "=========================================="
+# Add Microsoft package feed
+if [ ! -f /etc/apt/sources.list.d/microsoft-prod.list ]; then
+    wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    rm packages-microsoft-prod.deb
+    sudo apt-get update
+fi
+sudo apt-get install -y dotnet-sdk-8.0
+
+echo "=========================================="
+echo "  Installing SDKMAN (for Java, Kotlin, etc.)"
+echo "=========================================="
+# Install dependencies
+sudo apt-get install -y zip unzip
+# Install SDKMAN
+if [ ! -d "/home/${SUDO_USER}/.sdkman" ]; then
+    echo "Installing SDKMAN..."
+    sudo -u $SUDO_USER curl -s "https://get.sdkman.io" | sudo -u $SUDO_USER bash
+fi
+
+echo "=========================================="
+echo "  Installing NVM (Node Version Manager)"
+echo "=========================================="
 export NVM_DIR="/home/${SUDO_USER}/.nvm"
 if [ ! -d "$NVM_DIR" ]; then
-    echo "Installing NVM (Node Version Manager)..."
-    # Installs NVM
+    echo "Installing NVM..."
     sudo -u $SUDO_USER curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | sudo -u $SUDO_USER bash
-else
-    echo "NVM is already installed. Skipping."
+fi
+
+echo "=========================================="
+echo "  Installing Pyenv & Poetry (Python)"
+echo "=========================================="
+if ! command -v pyenv &> /dev/null; then
+    echo "Installing pyenv (Python Version Manager)..."
+    curl https://pyenv.run | sudo -u $SUDO_USER bash
+fi
+if ! command -v poetry &> /dev/null; then
+    echo "Installing Poetry (Project Manager)..."
+    curl -sSL https://install.python-poetry.org | sudo -u $SUDO_USER python3 -
+fi
+
+echo "=========================================="
+echo "  Installing Rbenv (Ruby Version Manager)"
+echo "=========================================="
+if ! command -v rbenv &> /dev/null; then
+    echo "Installing rbenv..."
+    # Install rbenv
+    sudo -u $SUDO_USER git clone https://github.com/rbenv/rbenv.git /home/${SUDO_USER}/.rbenv
+    # Install ruby-build (plugin for rbenv install)
+    sudo -u $SUDO_USER git clone https://github.com/rbenv/ruby-build.git /home/${SUDO_USER}/.rbenv/plugins/ruby-build
 fi
 
 # -----------------------------------------------------------------------------
-#  SECTION 2: TERMINAL QOL & DEVOPS
+#  SECTION 3: TERMINAL QOL & DEVOPS
 # -----------------------------------------------------------------------------
 
 echo "=========================================="
 echo "  Installing Terminal QoL (Utilities)"
 echo "=========================================="
-# tmux (multiplexer), htop (monitor), bat (cat with colors)
-# eza (ls replacement), tldr (simplified man pages)
-# jq (the 'sed' for JSON), fzf (fuzzy finder), ripgrep (fast grep)
-# ncdu (disk usage analyzer)
 sudo apt-get install -y \
   tmux htop bat eza tldr \
   jq fzf ripgrep ncdu
 
-# Fix 'bat' command name on Ubuntu (batcat -> bat)
+# Fix 'bat' command name on Ubuntu
 if [ ! -L /usr/bin/bat ]; then
   sudo rm -f /usr/bin/bat
   sudo ln -s /usr/bin/batcat /usr/bin/bat
 fi
 
 echo "=========================================="
-echo "  Installing DevOps Tools (Docker, Kubectl, Helm)"
+echo "  Installing DevOps & Cloud Tools"
 echo "=========================================="
 
 # 1. Kubectl (Kubernetes manager)
 sudo snap install kubectl --classic
 
-# 2. Docker CLI (to connect to Docker Desktop on Windows)
+# 2. Docker CLI (to connect to Docker Desktop)
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -106,7 +163,6 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
-# Install ONLY the client (CLI) and buildx
 sudo apt-get install -y docker-ce-cli docker-buildx-plugin
 
 # 3. Helm (Kubernetes Package Manager)
@@ -115,35 +171,35 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.
 sudo apt-get update
 sudo apt-get install -y helm
 
+# 4. Terraform
+sudo apt-get install -y software-properties-common
+wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt-get update
+sudo apt-get install -y terraform
+
+# 5. Cloud CLIs (AWS, Azure)
+sudo apt-get install -y awscli
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
 # -----------------------------------------------------------------------------
-#  SECTION 3: SHELL UPGRADE (ZSH + POWERLEVEL10K)
+#  SECTION 4: SHELL UPGRADE (ZSH + POWERLEVEL10K)
 # -----------------------------------------------------------------------------
 
 echo "=========================================="
 echo "  Installing Zsh + Oh My Zsh + Powerlevel10k"
 echo "=========================================="
-
-# Install Zsh and zsh-completions (BETTER AUTOCOMPLETE)
 sudo apt-get install -y zsh zsh-completions
+ZSHRC_PATH="/home/${SUDO_USER}/.zshrc"
 
-# Set Zsh as the default shell for the user (if not already set)
 if [ "$(getent passwd $SUDO_USER | cut -d: -f7)" != "$(which zsh)" ]; then
     echo "Setting Zsh as default shell for $SUDO_USER..."
     sudo chsh -s $(which zsh) $SUDO_USER
-else
-    echo "Zsh is already the default shell."
 fi
 
-# Set path for Zsh config
-ZSHRC_PATH="/home/${SUDO_USER}/.zshrc"
-
-# Install Oh My Zsh non-interactively
 if [ ! -d "/home/${SUDO_USER}/.oh-my-zsh" ]; then
     echo "Installing Oh My Zsh..."
-    # Run as the regular user, not as root
     sudo -u $SUDO_USER sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-else
-    echo "Oh My Zsh is already installed. Skipping."
 fi
 
 echo "Installing Zsh plugins (autosuggestions and syntax-highlighting)..."
@@ -159,18 +215,14 @@ echo "Installing Powerlevel10k Theme (P10k)..."
 P10K_PATH="/home/${SUDO_USER}/.oh-my-zsh/custom/themes/powerlevel10k"
 if [ ! -d "$P10K_PATH" ]; then
     sudo -u $SUDO_USER git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_PATH"
-else
-    echo "Powerlevel10k theme already installed. Skipping."
 fi
 
 # Enable plugins and P10k theme in .zshrc
 if [ -f "$ZSHRC_PATH" ]; then
-    # Enable Plugins (git, suggestions, highlight, completions)
     if grep -q "plugins=(git)" "$ZSHRC_PATH"; then
         echo "Enabling Zsh plugins..."
         sudo -u $SUDO_USER sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-completions)/' "$ZSHRC_PATH"
     fi
-    # Set the Powerlevel10k theme
     if grep -q 'ZSH_THEME="robbyrussell"' "$ZSHRC_PATH"; then
         echo "Setting Powerlevel10k theme..."
         sudo -u $SUDO_USER sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="powerlevel10k\/powerlevel10k"/' "$ZSHRC_PATH"
@@ -178,17 +230,12 @@ if [ -f "$ZSHRC_PATH" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-#  SECTION 4: KALI-STYLE ARSENAL
+#  SECTION 5: KALI-STYLE ARSENAL
 # -----------------------------------------------------------------------------
 
 echo "=========================================="
 echo "  KALI PACK: Recon & Enumeration"
 echo "=========================================="
-# nmap (network scanner), net-tools (ifconfig), dnsutils (dig)
-# tcpdump (sniffer), amass (subdomain enum)
-# smbclient (Windows pentest), enum4linux-ng (Windows enum)
-# nbtscan (NetBIOS scan), onesixtyone (SNMP scanner)
-# masscan (fast scanner)
 sudo apt-get install -y \
   nmap net-tools dnsutils tcpdump amass \
   smbclient enum4linux-ng nbtscan onesixtyone masscan
@@ -196,36 +243,33 @@ sudo apt-get install -y \
 echo "=========================================="
 echo "  KALI PACK: Web Analysis"
 echo "=========================================="
-# gobuster (directory fuzzer), dirb (fuzzer)
-# nikto (web scanner), whatweb (web fingerprint)
-# ffuf (fast fuzzer), sqlmap (SQL injection)
-# wfuzz (web fuzzer)
 sudo apt-get install -y \
   gobuster dirb nikto whatweb ffuf sqlmap wfuzz
 
 echo "=========================================="
 echo "  KALI PACK: Password, Exploit & Sniffing"
 echo "=========================================="
-# john (John the Ripper), hashid (hash identifier)
-# seclists (wordlists), thc-hydra (brute force)
-# exploitdb (searchsploit), metasploit-framework
-# impacket-scripts (AD/Windows pentest), dsniff (arpspoof)
-# aircrack-ng (Wi-Fi analysis)
 sudo apt-get install -y \
   john hashid seclists thc-hydra \
-  exploitdb metasploit-framework \
+  exploitdb metasplot-framework \
   python3-impacket impacket-scripts dsniff aircrack-ng
 
 echo "=========================================="
-echo "  KALI PACK: RE & Forensics"
+echo "  KALI PACK: RE, Forensics & GDB"
 echo "=========================================="
-# binwalk (firmware analysis), radare2 (reverse engineering)
-# foremost (file carving)
 sudo apt-get install -y \
   binwalk radare2 foremost
 
+# Install GEF (GDB Enhanced Features)
+if [ ! -f "/home/${SUDO_USER}/.gdbinit-gef.py" ]; then
+    echo "Installing GEF for GDB..."
+    sudo -u $SUDO_USER bash -c "$(curl -fsSL https://gef.blah.cat/sh)"
+else
+    echo "GEF already installed. Skipping."
+fi
+
 # -----------------------------------------------------------------------------
-#  SECTION 5: ALIASES & CLEANUP
+#  SECTION 6: ALIASES & SHELL LOADERS
 # -----------------------------------------------------------------------------
 
 echo "=========================================="
@@ -233,10 +277,8 @@ echo "  Applying custom Zsh aliases..."
 echo "=========================================="
 
 ALIAS_MARKER="# --- Custom Aliases ---"
-
 if ! grep -q "$ALIAS_MARKER" "$ZSHRC_PATH"; then
     echo "Adding custom aliases to $ZSHRC_PATH..."
-    # Appends custom aliases to the end of .zshrc
     echo "
 $ALIAS_MARKER
 # Replace 'ls' with 'eza' (modern, with icons)
@@ -249,13 +291,25 @@ alias update='sudo apt-get update && sudo apt-get upgrade -y'
 alias cleanup='sudo apt-get autoremove -y && sudo apt-get clean'
 alias open='explorer.exe .' # Open directory in Windows Explorer
 " | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
-else
-    echo "Custom aliases already found in $ZSHRC_PATH. Skipping."
 fi
 
-# Add the NVM loader to .zshrc (if not already present)
+echo "=========================================="
+echo "  Adding Runtimes to Zsh (.zshrc)..."
+echo "=========================================="
+
+# SDKMAN Loader
+if ! grep -q "sdkman" "$ZSHRC_PATH"; then
+    echo "Adding SDKMAN loader to $ZSHRC_PATH..."
+    echo '
+# --- SDKMAN Loader ---
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
+fi
+
+# NVM Loader
 if ! grep -q "nvm.sh" "$ZSHRC_PATH"; then
-    echo "Adding NVM to $ZSHRC_PATH..."
+    echo "Adding NVM loader to $ZSHRC_PATH..."
     echo '
 # --- NVM Loader ---
 export NVM_DIR="$HOME/.nvm"
@@ -264,6 +318,32 @@ export NVM_DIR="$HOME/.nvm"
 ' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
 fi
 
+# Pyenv & Poetry Loader
+if ! grep -q "pyenv" "$ZSHRC_PATH"; then
+    echo "Adding Pyenv & Poetry loader to $ZSHRC_PATH..."
+    echo '
+# --- Pyenv & Poetry Loader ---
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+if command -v pyenv 1>/dev/null 2>&1; then
+  eval "$(pyenv init -)"
+fi
+export PATH="$HOME/.local/bin:$PATH"
+' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
+fi
+
+# Rbenv Loader
+if ! grep -q "rbenv" "$ZSHRC_PATH"; then
+    echo "Adding Rbenv loader to $ZSHRC_PATH..."
+    echo '
+# --- Rbenv Loader ---
+export PATH="$HOME/.rbenv/bin:$PATH"
+if command -v rbenv 1>/dev/null 2>&1; then
+  eval "$(rbenv init -)"
+fi
+export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"
+' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
+fi
 
 # --- FINAL CLEANUP ---
 echo "=========================================="
@@ -273,7 +353,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V3.0 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
@@ -281,5 +361,11 @@ echo "1. Please close and reopen your Ubuntu terminal."
 echo "2. The Powerlevel10k (p10k) wizard will run on first launch."
 echo "   - Answer 'y' (yes) if you see icons (like a diamond, lock)."
 echo "   - Choose your preferred look ('Rainbow', 'Lean' recommended)."
-echo "   - The 'nerd-fonts-cascadiacode' you installed on Windows should work perfectly."
+echo ""
+echo "3. Run these commands to install default language versions:"
+echo -e "\033[0;32m   sdk install java 17.0.10-tem   \033[0m (or 21, 11...)"
+echo -e "\033[0;32m   sdk install kotlin             \033[0m"
+echo -e "\033[0;32m   nvm install --lts              \033[0m (Installs latest Node.js LTS)"
+echo -e "\033[0;32m   pyenv install 3.10             \033[0m (or 3.11, 3.12...)"
+echo -e "\033[0;32m   rbenv install 3.2.2            \033[0m (or latest...)"
 echo ""
