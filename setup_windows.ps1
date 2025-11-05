@@ -184,7 +184,6 @@ choco upgrade $batch11 -y
 
 # 5.11-A: MODERN TERMINAL UTILITIES (QoL)
 Write-Host "[+] Upgrading Modern Terminal Utilities (bat, eza, devtoys)..." -ForegroundColor Cyan
-# ADDED: devtoys
 $batch11a = @("bat", "eza", "devtoys")
 choco upgrade $batch11a -y
 
@@ -195,6 +194,8 @@ Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColo
 $batch12 = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
 choco upgrade $batch12 -y --ignore-http-cache
 Write-Host "NOTE: 'zap' (OWASP ZAP) foi removido pois o instalador silencioso do Choco está falhando. Instale-o manualmente." -ForegroundColor Gray
+Write-Host "[+] Upgrading HTTP Debugging Proxy (Fiddler)..." -ForegroundColor Magenta
+choco upgrade fiddler-classic -y
 
 # 5.13: ESSENTIAL DEPENDENCIES (Runtimes)
 Write-Host "[+] Upgrading Essential Runtimes..." -ForegroundColor Yellow
@@ -280,6 +281,9 @@ choco upgrade winmerge -y
 
 Write-Host "[+] Installing Modern Notes App (Obsidian)..." -ForegroundColor Cyan
 winget install Obsidian.Obsidian --accept-package-agreements --accept-source-agreements -h
+
+Write-Host "[+] Installing API Client (Insomnia)..." -ForegroundColor Cyan
+winget install Insomnia.Insomnia --accept-package-agreements --accept-source-agreements -h
 
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
