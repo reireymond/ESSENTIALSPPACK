@@ -8,26 +8,25 @@ This project automatically installs, configures, and updates:
 
 * **Windows Environment (via Chocolatey):**
     * **Editors & IDEs:** VS Code, Visual Studio 2022 Community (w/ C++ workload), Neovim.
-    * **Terminal Enhancements:** Windows Terminal, PowerShell 7, **Oh My Posh**, and **CaskaydiaCove Nerd Font**.
+    * **Terminal Enhancements:** Windows Terminal, PowerShell 7, **Oh My Posh**, and **nerd-fonts-cascadiacode**.
     * **Automated Configuration:**
-        * **VS Code:** Installs a full pack of 20+ extensions (Copilot, Python, C++, Java, WSL, etc.).
+        * **VS Code:** Installs a full pack of 20+ extensions (Copilot, Python, C++, Java, WSL, **Debugger for Firefox**, etc.).
         * **PowerShell Profile:** Configured with `Terminal-Icons`, menu-based completion, and history-prediction.
     * **Languages:** Python 3, Node.js, OpenJDK 17, .NET SDK.
     * **Build Tools:** Git, CMake, MSYS2.
     * **Virtualization:** Docker Desktop, VirtualBox.
     * **DevOps & Cloud:** AWS CLI, Azure CLI, Terraform.
     * **Hardware Diagnostics:** CPU-Z, GPU-Z, HWMonitor, CrystalDiskInfo, CrystalDiskMark, Speccy.
-    * **Benchmark & Stress:** Prime95, MSI Afterburner.
-    * **Cybersecurity Tools:** Nmap, Wireshark, Burp Suite, SQLMap, Ghidra, Autopsy, Metasploit, x64dbg, Sysinternals, Hashcat.
-    * **Utilities:** 7-Zip, Postman, DBeaver, Firefox Developer, Discord, KeePassXC, WinDirStat, WinSCP, gsudo.
+    * **Benchmark & Stress:** Prime95.
+    * **Cybersecurity Tools:** Nmap, Wireshark, **burp-suite-free-edition**, Ghidra, Autopsy, x64dbg, Sysinternals, Hashcat.
+    * **Utilities:** 7-Zip, Postman, DBeaver, Discord, KeePassXC, WinDirStat, WinSCP, gsudo, **bat, eza, DevToys**.
     * **Full Runtime Support:** vcredist-all (VC++ 2005-2022), .NET 3.5, .NET 4.x, JRE8, DirectX 9.0c.
     * **System Maintenance:** Runs **Windows Update** and **cleans all temp/prefetch files** at the end.
-    * **Utilities:** 7-Zip, Postman, DBeaver, Firefox Developer, Discord, KeePassXC, WinDirStat, WinSCP, gsudo, **bat, eza**.
 
 * **WSL (Ubuntu) Environment:**
     * **C/C++ Compilers:** `build-essential` (GCC, G++, Make), GDB, Valgrind.
     * **DevOps:** `kubectl` (Kubernetes).
-    * **Pentesting Tools:** `masscan`, `ffuf`, `hydra`, `gobuster`, `nikto`, `john`, `seclists`, `searchsploit`, `smbclient`.
+    * **Pentesting Tools:** `masscan`, `ffuf`, `thc-hydra`, `gobuster`, `nikto`, `john`, `seclists`, `exploitdb (searchsploit)`, `smbclient`, `enum4linux-ng`, `sqlmap`, `metasploit-framework`.
     * **RE & Forensics:** `radare2`, `binwalk`, `foremost`.
     * **Terminal QoL:** `tmux`, `htop`, `bat`, `eza`, `tldr`, `shellcheck`.
     * **Shell Upgrade:** Installs **Zsh + Oh My Zsh** with `auto-suggestions`, `syntax-highlighting`, and custom aliases (like `ll`, `update`, `cleanup`).
@@ -51,7 +50,7 @@ The entire process is automated by a single master script.
 
 1.  Clone this repository:
     ```bash
-    git clone https://github.com/reireymond/ESSENTIALSPPACK
+    git clone [https://github.com/reireymond/ESSENTIALSPPACK](https://github.com/reireymond/ESSENTIALSPPACK)
     ```
 2.  Navigate into the folder:
     ```powershell
