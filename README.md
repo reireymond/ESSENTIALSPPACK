@@ -57,6 +57,18 @@ The entire process is automated by a single master script.
 
 ---
 
+**What will happen:**
+
+1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `setup_windows.ps1` again.
+2.  It will install/verify **Chocolatey**.
+3.  It will install/upgrade **all 70+ Windows tools**.
+4.  At the end, it will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted.
+5.  **Close and reopen** your terminal at the very end.
+
+Done! Your full environment is now configured.
+
+---
+
 ## 🔧 Maintenance (Updating Software)
 
 The main `setup.ps1` script will update all the software listed in the script *when you run it*.
@@ -68,14 +80,3 @@ However, this repository also includes a separate, lightweight script just for d
     ```powershell
     .\update_windows.ps1
     ```
----
-
-**What will happen:**
-
-1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `setup_windows.ps1` again.
-2.  It will install/verify **Chocolatey**.
-3.  It will install/upgrade **all 70+ Windows tools**.
-4.  At the end, it will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted.
-5.  **Close and reopen** your terminal at the very end.
-
-Done! Your full environment is now configured.
