@@ -186,8 +186,8 @@ choco upgrade $batch11a -y
 
 # 5.12: CYBERSECURITY & PENTESTING (Host) (FIXED IDs)
 Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
-$batch12 = @("nmap", "wireshark", "burp-suite-community-edition", "zap", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
-choco upgrade $batch12 -y
+$batch12 = @("nmap", "wireshark", "burpsuite-community", "zap", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
+choco upgrade $batch12 -y --ignore-http-cache
 
 # 5.13: ESSENTIAL DEPENDENCIES (Runtimes)
 Write-Host "[+] Upgrading Essential Runtimes..." -ForegroundColor Yellow
