@@ -213,6 +213,11 @@ choco upgrade $batch14 -y
 Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
 
 # 5.15: CONFIGURING POWERSHELL 7 PROFILE (Productivity Pack)
+Write-Host "[+] Installing essential PowerShell Modules (Pester, PSReadLine)..." -ForegroundColor Yellow
+Install-Module -Name Pester -Force -Scope CurrentUser -Confirm:$false
+Install-Module -Name PSReadLine -Force -Scope CurrentUser -Confirm:$false
+Install-Module -Name Microsoft.PowerShell.Archive -Force -Scope CurrentUser -Confirm:$false
+
 Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
     Write-Host "[+] Installing 'Terminal-Icons' module..."
