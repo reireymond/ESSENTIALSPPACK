@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 3.0 (Multi-Language, DevOps & Kali-fy)
+#  Version 3.1 (Com Pipx e Limpeza de Sudo)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #  Features:
@@ -10,7 +10,7 @@
 #  - Runtimes: SDKMAN (Java/Kotlin), NVM (Node), Pyenv (Python),
 #              Rbenv (Ruby), Go, Rust, PHP, Lua, .NET.
 #  - DevOps: Docker, Kubectl, Helm, Terraform, AWS, Azure.
-#  - Pentest: Kali-Linux toolset + GDB Enhanced Features (GEF).
+#  - Pentest: Kali-Linux toolset + GDB Enhanced Features (GEF) + Pipx (isolated Python tools).
 #
 # =============================================================================
 
@@ -20,8 +20,7 @@ export DEBIAN_FRONTEND=noninteractive
 # Request administrator (sudo) privileges at the start
 sudo -v
 
-# Keep sudo privileges alive throughout the script
-while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+# Removido: Loop while true para manter o sudo. O ticket padrão de 15min é mais seguro.
 
 echo "=========================================="
 echo "  Updating System (apt-get update/upgrade)..."
@@ -108,7 +107,7 @@ if [ ! -d "$NVM_DIR" ]; then
 fi
 
 echo "=========================================="
-echo "  Installing Pyenv & Poetry (Python)"
+echo "  Installing Pyenv, Poetry, e PIPX (Python)"
 echo "=========================================="
 if ! command -v pyenv &> /dev/null; then
     echo "Installing pyenv (Python Version Manager)..."
@@ -118,6 +117,11 @@ if ! command -v poetry &> /dev/null; then
     echo "Installing Poetry (Project Manager)..."
     curl -sSL https://install.python-poetry.org | sudo -u $SUDO_USER python3 -
 fi
+# Adicionando pipx para ferramentas CLI isoladas (Melhoria)
+echo "Installing pipx (for isolated Python CLIs)..."
+sudo apt-get install -y pipx
+sudo -u $SUDO_USER bash -c "export PATH=\"$PATH\" && pipx ensurepath"
+
 
 echo "=========================================="
 echo "  Installing Rbenv (Ruby Version Manager)"
@@ -281,14 +285,17 @@ echo "  KALI PACK: Post-Exploitation & Python Tools"
 echo "=========================================="
 
 echo "[+] Installing Evil-WinRM (via Ruby)..."
+# É importante garantir que o rbenv esteja inicializado para o usuário SUDO_USER
 sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && gem install evil-winrm"
 
-echo "[+] Installing Python Pentest Tools (pwntools, bloodhound, sublist3r)..."
-sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && \
-    pip install pwntools && \
-    pip install bloodhound-py && \
-    pip install sublist3r \
-    pip install uncompyle6"
+echo "[+] Installing Python Pentest Tools (via pipx)..."
+# Usando pipx para instalar ferramentas Python em ambientes isolados (Melhoria)
+sudo -u $SUDO_USER bash -c "
+    pipx install pwntools
+    pipx install bloodhound-py
+    pipx install sublist3r
+    pipx install uncompyle6
+"
 
 # Install GEF (GDB Enhanced Features)
 if [ ! -f "/home/${SUDO_USER}/.gdbinit-gef.py" ]; then
@@ -360,6 +367,7 @@ export PATH="$PYENV_ROOT/bin:$PATH"
 if command -v pyenv 1>/dev/null 2>&1; then
   eval "$(pyenv init -)"
 fi
+# Adicionado PATH para binários Python instalados via pipx
 export PATH="$HOME/.local/bin:$PATH"
 ' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
 fi
@@ -387,15 +395,19 @@ echo "  Installing Default Language Versions..."
 echo "=========================================="
 
 echo "[+] Installing Node.js LTS (via NVM)..."
+# O bash -c externo garante que o script carregue o nvm.sh
 sudo -u $SUDO_USER bash -c "source $NVM_DIR/nvm.sh && nvm install --lts && nvm alias default 'lts/*'"
 
 echo "[+] Installing Java 17 & Kotlin (via SDKMAN)..."
+# O bash -c externo garante que o script carregue o sdkman-init.sh
 sudo -u $SUDO_USER bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 17.0.10-tem && sdk install kotlin"
 
 echo "[+] Installing Python 3.10 (via Pyenv)..."
+# O eval "$(pyenv init -)" interno é necessário para o pyenv funcionar
 sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pyenv install 3.10.13 && pyenv global 3.10.13"
 
 echo "[+] Installing Ruby 3.2.2 (via Rbenv)..."
+# O eval "$(rbenv init -)" interno é necessário para o rbenv funcionar
 sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && rbenv install 3.2.2 && rbenv global 3.2.2"
 
 # --- FINAL CLEANUP ---
@@ -406,7 +418,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V3.0 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V3.1 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
