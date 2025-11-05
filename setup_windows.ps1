@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.7 (Final fix: Separated --pre packages and fixed NuGet bootstrap)
+    Version: 2.8 (Fixed burpsuite and nerd-font package IDs based on user feedback)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -191,10 +191,9 @@ choco upgrade $batch11a -y
 # 5.12: CYBERSECURITY & PENTESTING (Host) (FIXED IDs)
 Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
 # REMOVED: 'zap' (instalador silencioso falha)
-# FIXED: Separado o 'burpsuite-community' para forçar o --pre
-$batch12 = @("nmap", "wireshark", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
+# FIXED: 'burpsuite-community' alterado para 'burp-suite-free-edition'. Não precisa mais do --pre.
+$batch12 = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
 choco upgrade $batch12 -y --ignore-http-cache
-choco upgrade burpsuite-community -y --pre
 Write-Host "NOTE: 'zap' (OWASP ZAP) foi removido pois o instalador silencioso do Choco está falhando. Instale-o manualmente." -ForegroundColor Gray
 
 # 5.13: ESSENTIAL DEPENDENCIES (Runtimes)
@@ -205,9 +204,9 @@ Write-Host "Some runtimes may require a reboot. This will be checked at the end.
 
 # 5.14: TERMINAL ENHANCEMENTS (Oh My Posh + Font) (FIXED ID)
 Write-Host "[+] Upgrading Terminal Enhancements (Oh My Posh + Nerd Font)..." -ForegroundColor Cyan
-# FIXED: Separados os pacotes. oh-my-posh é estável, a fonte é --pre.
-choco upgrade oh-my-posh -y
-choco upgrade caskaydiacove-nerd-font -y --pre
+# FIXED: 'caskaydiacove-nerd-font' alterado para 'nerd-fonts-cascadiacode'. Não precisa mais do --pre.
+$batch14 = @("oh-my-posh", "nerd-fonts-cascadiacode")
+choco upgrade $batch14 -y
 Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
 
 # 5.15: CONFIGURING POWERSHELL 7 PROFILE (Productivity Pack)
