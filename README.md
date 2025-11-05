@@ -22,6 +22,7 @@ This project automatically installs, configures, and updates:
     * **Utilities:** 7-Zip, Postman, DBeaver, Firefox Developer, Discord, KeePassXC, WinDirStat, WinSCP, gsudo.
     * **Full Runtime Support:** vcredist-all (VC++ 2005-2022), .NET 3.5, .NET 4.x, JRE8, DirectX 9.0c.
     * **System Maintenance:** Runs **Windows Update** and **cleans all temp/prefetch files** at the end.
+    * **Utilities:** 7-Zip, Postman, DBeaver, Firefox Developer, Discord, KeePassXC, WinDirStat, WinSCP, gsudo, **bat, eza**.
 
 * **WSL (Ubuntu) Environment:**
     * **C/C++ Compilers:** `build-essential` (GCC, G++, Make), GDB, Valgrind.
