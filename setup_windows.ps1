@@ -126,7 +126,7 @@ choco upgrade $batch1 -y
 
 # 5.2: Browsers (FIXED IDs)
 Write-Host "[+] Upgrading Browsers..." -ForegroundColor Cyan
-$batch2 = @("firefox-dev", "firefox", "googlechrome", "tor-browser")
+$batch2 = @("firefox-developer-edition", "firefox", "googlechrome", "tor-browser")
 choco upgrade $batch2 -y
 
 # 5.3: Programming Languages & Runtimes
@@ -162,7 +162,7 @@ choco upgrade $batch7 -y
 
 # 5.8: Hardware Diagnostics, Benchmark & Monitoring (FIXED ID)
 Write-Host "[+] Upgrading Hardware Diagnostics & Benchmark Kit..." -ForegroundColor Cyan
-$batch8 = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "msiafterburner", "prime95")
+$batch8 = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
 choco upgrade $batch8 -y
 
 # 5.9: Productivity & Communication
@@ -197,7 +197,7 @@ Write-Host "Some runtimes may require a reboot. This will be checked at the end.
 
 # 5.14: TERMINAL ENHANCEMENTS (Oh My Posh + Font) (FIXED ID)
 Write-Host "[+] Upgrading Terminal Enhancements (Oh My Posh + Nerd Font)..." -ForegroundColor Cyan
-$batch14 = @("oh-my-posh", "nerd-fonts-caskadiacove")
+$batch14 = @("oh-my-posh", "caskaydiacove-nerd-font")
 choco upgrade $batch14 -y
 Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
 
@@ -389,7 +389,7 @@ Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction Silently
 Remove-Item -Path "$env:SystemRoot\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "[+] Cleaning up Chocolatey package cache..." -ForegroundColor Cyan
-choco cache --remove --all
+choco cache remove --all
 
 Write-Host "[+] Optimizing main drive (C:)... (TRIM or Defrag)" -ForegroundColor Cyan
 Optimize-Volume -DriveLetter C -ErrorAction SilentlyContinue
