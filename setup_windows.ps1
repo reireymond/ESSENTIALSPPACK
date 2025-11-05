@@ -181,14 +181,15 @@ Write-Host "Some runtimes may require a reboot. This will be checked at the end.
 Write-Host "[+] Upgrading Terminal Enhancements (Oh My Posh + Nerd Font)..." -ForegroundColor Cyan
 choco upgrade oh-my-posh
 choco upgrade caskaydiacove-nerdfont
-Write-Host "Oh My Posh e CaskaydiaCove NF (Nerd Font) instalados/atualizados."
+Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
 
 # 5.15: CONFIGURING POWERSHELL 7 PROFILE (Productivity Pack)
 Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
     
     Write-Host "[+] Installing 'Terminal-Icons' module..."
-    
+    # We must ensure NuGet is bootstrapped for the CurrentUser scope
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser -Confirm:$false
     Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ErrorAction SilentlyContinue
 
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
@@ -202,19 +203,19 @@ try {
     $ProfileContent = @"
 
 # --- Productivity Pack Start ---
-# Faz o Terminal ser mais intuitivo (temas)
+# Makes the terminal beautiful (themes)
 oh-my-posh init pwsh | Invoke-Expression
 
-# Faz aparecer icones no Terminal
+# Enables icons in the terminal
 Import-Module -Name Terminal-Icons
 
-# Faz o TAB (completar) funcionar como no Linux (menu interativo)
+# Makes TAB completion use an interactive menu (like Linux)
 Set-PSReadLineOption -EditMode Emacs
 
-# Habilita o autocompletar "fantasma" (baseado no histórico)
+# Enables "ghost" auto-completion based on history
 Set-PSReadLineOption -PredictionSource History
 
-# Libera bloqueio de execução de scripts locais
+# Allow local scripts to run
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # --- Productivity Pack End ---
 "@
@@ -225,7 +226,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     
     if ($FileContent -notlike "*$Marker*") {
         Write-Host "Adding Productivity Pack to $ProfilePath..."
-        # Adiciona o bloco inteiro ao final do arquivo
+        # Add the entire block to the end of the file
         Add-Content -Path $ProfilePath -Value $ProfileContent
         Write-Host "PowerShell profile configured." -ForegroundColor Green
     } else {
