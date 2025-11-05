@@ -55,6 +55,21 @@ The entire process is automated by a single master script.
     * Right-click `setup_windows.ps1` and choose "Run with PowerShell".
     * *OR*, in an Admin terminal, run: `.\setup_windows.ps1`
 
+---
+
+## 🔧 Maintenance (Updating Software)
+
+The main `setup.ps1` script will update all the software listed in the script *when you run it*.
+
+However, this repository also includes a separate, lightweight script just for daily or weekly maintenance. This script will update **all** packages on your system from **both Winget and Chocolatey**.
+
+1.  Navigate into the repository folder.
+2.  Run the update script **as Administrator**:
+    ```powershell
+    .\update_windows.ps1
+    ```
+---
+
 **What will happen:**
 
 1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `setup_windows.ps1` again.
