@@ -65,6 +65,9 @@ Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction Silently
 # Clear Prefetch Folder (prefetch)
 Remove-Item -Path "$env:SystemRoot\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
+Write-Host "[+] Cleaning up Chocolatey package cache..." -ForegroundColor Cyan
+choco cache --remove --all
+
 Write-Host "[+] Optimizing main drive (C:)... (TRIM or Defrag)" -ForegroundColor Cyan
 Optimize-Volume -DriveLetter C -ErrorAction SilentlyContinue
 
