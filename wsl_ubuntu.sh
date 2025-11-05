@@ -2,7 +2,7 @@
 
 # =============================================================================
 #
-#  Setup Script for WSL (Ubuntu) - Version 1.6 (Final Robust Edition)
+#  Setup Script for WSL (Ubuntu) - Version 1.7 (Added Metasploit & SQLMap)
 #
 #  Installs the C/C++ development environment (build-essential),
 #  a suite of pentesting tools (Kali-like),
@@ -56,8 +56,8 @@ echo "=========================================="
 echo "  Installing Web Analysis Tools"
 echo "=========================================="
 # gobuster (directory brute-force), nikto (vulnerability scanner)
-# ffuf (fast web fuzzer)
-sudo apt install -y gobuster dirb nikto whatweb ffuf
+# ffuf (fast web fuzzer), sqlmap (SQL injection tool)
+sudo apt install -y gobuster dirb nikto whatweb ffuf sqlmap
 
 echo "=========================================="
 echo "  Installing Password Tools & Wordlists"
@@ -73,7 +73,8 @@ echo "=========================================="
 # binwalk (firmware & file analysis)
 # radare2 (reverse engineering)
 # foremost (forensics, file carving)
-sudo apt install -y searchsploit exploitdb binwalk radare2 foremost
+# metasploit-framework (Exploitation framework)
+sudo apt install -y searchsploit exploitdb binwalk radare2 foremost metasploit-framework
 
 echo "=========================================="
 echo "  Installing DevOps Tools (Kubernetes)"
@@ -114,9 +115,13 @@ echo "Installing Zsh plugins (autosuggestions and syntax-highlighting)..."
 ZSH_CUSTOM_PLUGINS="/home/${SUDO_USER}/.oh-my-zsh/custom/plugins"
 if [ ! -d "$ZSH_CUSTOM_PLUGINS/zsh-autosuggestions" ]; then
     sudo -u $SUDO_USER git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM_PLUGINS/zsh-autosuggestions
+else
+    echo "zsh-autosuggestions plugin already installed. Skipping."
 fi
 if [ ! -d "$ZSH_CUSTOM_PLUGINS/zsh-syntax-highlighting" ]; then
     sudo -u $SUDO_USER git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM_PLUGINS/zsh-syntax-highlighting
+else
+    echo "zsh-syntax-highlighting plugin already installed. Skipping."
 fi
 
 # Robustly enable plugins in .zshrc
