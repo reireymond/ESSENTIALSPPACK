@@ -8,14 +8,14 @@ This project automatically installs, configures, and updates over 90 essential t
 
 * **Windows Environment (via Chocolatey & Winget):**
     * **Editors & IDEs:** VS Code, Visual Studio 2022 Community (w/ C++), Neovim.
-    * **Terminal & QoL:** Windows Terminal, PowerShell 7, Oh My Posh, nerd-fonts-cascadiacode, gsudo, **zoxide (jumps)**, **bat**, **eza**, DevToys.
-    * **Networking & Files:** 7-Zip, WinSCP, WinDirStat, **Bandizip**, **FreeDownloadMananger**.
+    * **Terminal & QoL:** Windows Terminal, PowerShell 7, Oh My Posh, nerd-fonts-cascadiacode, gsudo, zoxide (jumps), bat, eza, DevToys.
+    * **Networking & Files:** 7-Zip, WinSCP, WinDirStat, **Bandizip**, **Free Download Manager (FDM)** (Torrent/Downloads).
     * **Languages & Runtimes:** Python 3, Node.js (LTS), OpenJDK 17, .NET SDK.
-    * **Web Dev:** **MariaDB**, **Nginx** (via Choco).
-    * **Build Tools:** Git, **Git Credential Manager**, CMake, MSYS2.
+    * **Web Dev:** MariaDB, Nginx (via Choco).
+    * **Build Tools:** Git, Git Credential Manager, CMake, MSYS2.
     * **Virtualization:** Docker Desktop, VirtualBox.
-    * **DevOps & Cloud:** AWS CLI, Azure CLI, Terraform, **Kubernetes CLI (kubectl)**.
-    * **Security (Host):** Nmap, Wireshark, Burp Suite Free, Ghidra, Autopsy, x64dbg, Sysinternals, Hashcat, **Proxifier**, Volatility3.
+    * **DevOps & Cloud:** AWS CLI, Azure CLI, Terraform, Kubernetes CLI (kubectl).
+    * **Security (Host):** Nmap, Wireshark, Burp Suite Free, Ghidra, Autopsy, x64dbg, Sysinternals, Hashcat, Proxifier, Volatility3.
     * **System Maintenance:** Runs **Windows Update** and **cleans all temp/prefetch files** at the end.
     * **Automated Configuration:** Configures VS Code extensions (including **Dart/Flutter**) and the PowerShell 7 profile (using `Terminal-Icons`).
 
