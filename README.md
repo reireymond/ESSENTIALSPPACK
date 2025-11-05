@@ -1,37 +1,39 @@
 # Essential's Programming Pack - Environment Setup Scripts
 
-This repository contains a set of scripts to automate the setup of a development and cybersecurity environment on Windows machines, with a focus on WSL 2 (Ubuntu) integration.
+This repository contains a set of scripts to automate the setup of a comprehensive development, DevOps, and cybersecurity environment on Windows machines, with a focus on WSL 2 (Ubuntu) integration.
 
-## 🚀 What does it do?
+## 🚀 What does it do? (Final Version)
 
-This project automatically installs, configures, and updates:
+This project automatically installs, configures, and updates over 90 essential tools, frameworks, and languages.
 
-* **Windows Environment (via Chocolatey):**
-    * **Editors & IDEs:** VS Code, Visual Studio 2022 Community (w/ C++ workload), Neovim.
-    * **Terminal Enhancements:** Windows Terminal, PowerShell 7, **Oh My Posh**, and **nerd-fonts-cascadiacode**.
-    * **Automated Configuration:**
-        * **VS Code:** Installs a full pack of 20+ extensions (Copilot, Python, C++, Java, WSL, **Debugger for Firefox**, etc.).
-        * **PowerShell Profile:** Configured with `Terminal-Icons`, menu-based completion, and history-prediction.
-    * **Languages:** Python 3, Node.js, OpenJDK 17, .NET SDK.
-    * **Build Tools:** Git, CMake, MSYS2.
+* **Windows Environment (via Chocolatey & Winget):**
+    * **Editors & IDEs:** VS Code, Visual Studio 2022 Community (w/ C++), Neovim.
+    * **Terminal & QoL:** Windows Terminal, PowerShell 7, Oh My Posh, nerd-fonts-cascadiacode, gsudo, **zoxide (jumps)**, **bat**, **eza**, DevToys.
+    * **Networking & Files:** 7-Zip, WinSCP, WinDirStat, **Bandizip**, **FreeDownloadMananger**.
+    * **Languages & Runtimes:** Python 3, Node.js (LTS), OpenJDK 17, .NET SDK.
+    * **Web Dev:** **MariaDB**, **Nginx** (via Choco).
+    * **Build Tools:** Git, **Git Credential Manager**, CMake, MSYS2.
     * **Virtualization:** Docker Desktop, VirtualBox.
-    * **DevOps & Cloud:** AWS CLI, Azure CLI, Terraform.
-    * **Hardware Diagnostics:** CPU-Z, GPU-Z, HWMonitor, CrystalDiskInfo, CrystalDiskMark, Speccy.
-    * **Benchmark & Stress:** Prime95.
-    * **Cybersecurity Tools:** Nmap, Wireshark, **burp-suite-free-edition**, Ghidra, Autopsy, x64dbg, Sysinternals, Hashcat.
-    * **Utilities:** 7-Zip, Postman, DBeaver, Discord, KeePassXC, WinDirStat, WinSCP, gsudo, **bat, eza, DevToys**.
-    * **Full Runtime Support:** vcredist-all (VC++ 2005-2022), .NET 3.5, .NET 4.x, JRE8, DirectX 9.0c.
+    * **DevOps & Cloud:** AWS CLI, Azure CLI, Terraform, **Kubernetes CLI (kubectl)**.
+    * **Security (Host):** Nmap, Wireshark, Burp Suite Free, Ghidra, Autopsy, x64dbg, Sysinternals, Hashcat, **Proxifier**, Volatility3.
     * **System Maintenance:** Runs **Windows Update** and **cleans all temp/prefetch files** at the end.
+    * **Automated Configuration:** Configures VS Code extensions (including **Dart/Flutter**) and the PowerShell 7 profile (using `Terminal-Icons`).
 
 * **WSL (Ubuntu) Environment:**
-    * **C/C++ Compilers:** `build-essential` (GCC, G++, Make), GDB, Valgrind.
-    * **DevOps:** `kubectl` (Kubernetes).
-    * **Pentesting Tools:** `masscan`, `ffuf`, `thc-hydra`, `gobuster`, `nikto`, `john`, `seclists`, `exploitdb (searchsploit)`, `smbclient`, `enum4linux-ng`, `sqlmap`, `metasploit-framework`.
-    * **RE & Forensics:** `radare2`, `binwalk`, `foremost`.
-    * **Terminal QoL:** `tmux`, `htop`, `bat`, `eza`, `tldr`, `shellcheck`.
-    * **Shell Upgrade:** Installs **Zsh + Oh My Zsh** with `auto-suggestions`, `syntax-highlighting`, and custom aliases (like `ll`, `update`, `cleanup`).
-    * **System Cleanup:** Automatically runs `apt autoremove` and `apt clean`.
- 
+    * **Core Stack:** C/C++ Compilers, GDB, Valgrind, **set -e (robustness)**.
+    * **Runtimes & Languages (Managed by Pyenv, SDKMAN, NVM, Rbenv):**
+        * **JVM:** Java 17, Kotlin, **Scala**, Maven.
+        * **Mobile/Web:** Node.js, **TypeScript**, **Dart**, **Elixir** (via Erlang).
+        * **Scripting:** Python 3.10 (w/ Pyenv, Poetry), Ruby 3.2 (w/ Rbenv), Go, Rust, PHP, Lua.
+    * **Terminal QoL (Modern):** Zsh/Oh My Zsh, `fd-find` (fast search), `duf` (disk usage), `tmux`, `htop`, custom aliases.
+    * **DevOps TUI:** **Lazydocker**, LazyGit.
+    * **Pentesting/Cybersecurity (Go/Pipx):**
+        * **Recon:** `httpx`, `subfinder`, `feroxbuster` (fast fuzzing), `wafw00f`.
+        * **Exploitation:** `metasploit-framework`, `john`, `seclists`, `evil-winrm`.
+        * **RE/Forensics:** `radare2` (w/ r2pipe), `binwalk`, `foremost`, GEF, `volatility3`.
+    * **System Diagnostics/Hardening:** **mtr**, **traceroute**, **auditd**, **fail2ban**.
+    * **Data Science:** **Jupyter** (via pipx).
+
 ---
 
 ## 📋 Prerequisites
@@ -65,9 +67,9 @@ The entire process is automated by a single master script.
 **What will happen:**
 
 1.  The script will check if **WSL 2** is installed. If not, it will install it and **prompt you to reboot**. After rebooting, just run `setup_windows.ps1` again.
-2.  It will install/verify **Chocolatey** and enable auto-confirmation.
-3.  It will install/upgrade **all 70+ Windows tools** and **VS Code extensions**.
-4.  It will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted.
+2.  It will install/verify **Chocolatey** and enable auto-confirmation, and use performance optimizations like `--noprogress`.
+3.  It will install/upgrade **all Windows tools** and **VS Code extensions**.
+4.  It will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted. The WSL script runs **APT installation in one batch** for maximum speed.
 5.  It will run **Windows Update** to install all pending security patches.
 6.  It will **clean up** temp files and **optimize** your drive.
 7.  **Close and reopen** your terminal at the very end.
