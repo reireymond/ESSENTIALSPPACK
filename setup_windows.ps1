@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 2.1 (Fixed broken package IDs and robust module installs)
+    Version: 2.5 (Full automated build with all fixes)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -126,8 +126,8 @@ choco upgrade $batch1 -y
 
 # 5.2: Browsers (FIXED IDs)
 Write-Host "[+] Upgrading Browsers..." -ForegroundColor Cyan
-# FIXED: 'firefox-dev' foi alterado para 'firefox-developer-edition'
-$batch2 = @("firefox-developer-edition", "firefox", "googlechrome", "tor-browser")
+# REMOVED: 'firefox-dev' (pacote não encontrado no repositório Choco)
+$batch2 = @("firefox", "googlechrome", "tor-browser")
 choco upgrade $batch2 -y
 
 # 5.3: Programming Languages & Runtimes
@@ -166,7 +166,7 @@ Write-Host "[+] Upgrading Hardware Diagnostics & Benchmark Kit..." -ForegroundCo
 # REMOVED: 'msiafterburner' (pacote Choco quebrado, link de download negado)
 $batch8 = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
 choco upgrade $batch8 -y
-Write-Host "NOTE: 'msiafterburner' foi removido pois o pacote Choco está quebrado. Instale-o manualmente." -ForegroundColor Gray
+Write-Host "NOTE: 'msiafterburner' foi removido pois o pacote Choco está quebrado. Instale-o manually." -ForegroundColor Gray
 
 # 5.9: Productivity & Communication
 Write-Host "[+] Upgrading Communication Tools..." -ForegroundColor Cyan
@@ -183,15 +183,17 @@ $batch11 = @("gsudo", "keepassxc", "windirstat", "winscp")
 choco upgrade $batch11 -y
 
 # 5.11-A: MODERN TERMINAL UTILITIES (QoL)
-Write-Host "[+] Upgrading Modern Terminal Utilities (bat, eza)..." -ForegroundColor Cyan
-$batch11a = @("bat", "eza")
+Write-Host "[+] Upgrading Modern Terminal Utilities (bat, eza, devtoys)..." -ForegroundColor Cyan
+# ADDED: devtoys
+$batch11a = @("bat", "eza", "devtoys")
 choco upgrade $batch11a -y
 
 # 5.12: CYBERSECURITY & PENTESTING (Host) (FIXED IDs)
 Write-Host "[+] Upgrading Cybersecurity & Pentesting Arsenal..." -ForegroundColor Magenta
 # REMOVED: 'zap' (instalador silencioso falha)
+# FIXED: Adicionado --pre para burpsuite-community
 $batch12 = @("nmap", "wireshark", "burpsuite-community", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty")
-choco upgrade $batch12 -y --ignore-http-cache
+choco upgrade $batch12 -y --ignore-http-cache --pre
 Write-Host "NOTE: 'zap' (OWASP ZAP) foi removido pois o instalador silencioso do Choco está falhando. Instale-o manualmente." -ForegroundColor Gray
 
 # 5.13: ESSENTIAL DEPENDENCIES (Runtimes)
@@ -203,18 +205,21 @@ Write-Host "Some runtimes may require a reboot. This will be checked at the end.
 # 5.14: TERMINAL ENHANCEMENTS (Oh My Posh + Font) (FIXED ID)
 Write-Host "[+] Upgrading Terminal Enhancements (Oh My Posh + Nerd Font)..." -ForegroundColor Cyan
 # FIXED: 'nerd-fonts-caskadiacove' foi alterado para 'caskaydiacove-nerd-font'
+# FIXED: Adicionado --pre para a fonte
 $batch14 = @("oh-my-posh", "caskaydiacove-nerd-font")
-choco upgrade $batch14 -y
+choco upgrade $batch14 -y --pre
 Write-Host "Oh My Posh and CaskaydiaCove NF (Nerd Font) installed/updated."
 
 # 5.15: CONFIGURING POWERSHELL 7 PROFILE (Productivity Pack)
 Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
     Write-Host "[+] Installing 'Terminal-Icons' module..."
-    # FIXED: Tornou a instalação do provedor NuGet mais robusta
+    # FIXED: Garante que o provedor NuGet está instalado
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser -Confirm:$false
-    # FIXED: Adicionado -ForceBootstrap para forçar a instalação do NuGet se ele falhar
-    Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ForceBootstrap -ErrorAction SilentlyContinue
+    # FIXED: Define o PSGallery como confiável para evitar prompts
+    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -Scope CurrentUser
+    # FIXED: Instala o módulo
+    Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -Confirm:$false -ErrorAction Stop
 
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
     $ProfilePath = Join-Path $ProfileDir "Microsoft.PowerShell_profile.ps1"
@@ -293,7 +298,8 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
         "ms-python.vscode-pylance",
         "vscjava.vscode-java-pack",
         "ms-vscode-remote.remote-wsl",
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+        "firefox-devtools.vscode-firefox-debug"
     )
 
     # Loop and install (or use a single line, but loop gives better feedback)
@@ -366,10 +372,12 @@ Write-Host ""
 
 Write-Host "[+] Installing/Checking 'PSWindowsUpdate' module..." -ForegroundColor Cyan
 try {
-    # FIXED: Tornou a instalação do provedor NuGet mais robusta
+    # FIXED: Garante que o provedor NuGet está instalado
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser -Confirm:$false
-    # FIXED: Adicionado -ForceBootstrap para forçar a instalação do NuGet se ele falhar
-    Install-Module -Name PSWindowsUpdate -Force -AcceptLicense -Confirm:$false -ForceBootstrap
+    # FIXED: Define o PSGallery como confiável para evitar prompts
+    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -Scope CurrentUser
+    # FIXED: Instala o módulo
+    Install-Module -Name PSWindowsUpdate -Force -AcceptLicense -Confirm:$false
     Import-Module PSWindowsUpdate -Force
     
     Write-Host "[+] Searching, downloading, and installing all Windows Updates..." -ForegroundColor Yellow
