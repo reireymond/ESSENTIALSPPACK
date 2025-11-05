@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 3.2 (Adição de Linguagens: Extensões Dart/Flutter para VS Code)
+    Version: 3.4 (Substituído PicoTorrent por Free Download Manager)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -73,7 +73,7 @@ $PackageDefinitions = @{
         )
     }
     "choco" = @{
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide")
+        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "freedownloadmanager", "bandizip")
         "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk")
         "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2")
         "Virtualization"        = @("docker-desktop", "virtualbox")
@@ -239,7 +239,6 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
         "ms-vscode-remote.remote-wsl",
         "ms-azuretools.vscode-docker",
         "firefox-devtools.vscode-firefox-debug",
-        # NOVAS LINGUAGENS: Dart/Flutter
         "dart-code.dart-code",
         "dart-code.flutter"
     )
