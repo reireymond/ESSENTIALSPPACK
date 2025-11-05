@@ -2,14 +2,14 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 3.4 (Novas Linguagens: Dart, Scala, Elixir, Erlang, TypeScript)
+#  Version 3.5 (Final Additions: Security, Diagnostics, Jupyter)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #  Features:
 #  - QoL: Zsh + P10k, eza, bat, fzf, fd, duf.
 #  - Runtimes: SDKMAN (Java/Kotlin/Scala/Dart/Elixir), NVM (Node), Pyenv, etc.
 #  - DevOps: Docker, Kubectl, Helm, Terraform, AWS, Azure, Lazydocker.
-#  - Pentest: Kali-Linux toolset + Go Recon Tools.
+#  - Pentest: Kali-Linux toolset + Security Hardening (fail2ban, auditd).
 #
 # =============================================================================
 
@@ -46,10 +46,12 @@ sudo apt-get install -y \
   golang-go lua5.4 \
   php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath \
   php-composer \
-  # Terminal QoL
+  # Terminal QoL & Diagnostics
   tmux htop bat eza tldr \
   jq fzf ripgrep ncdu \
   neovim fd-find duf \
+  # MELHORIA: Diagnóstico de Rede e Segurança
+  mtr-tiny traceroute auditd fail2ban \
   # Kali Pack: Recon & Enumeration
   nmap net-tools dnsutils tcpdump amass \
   smbclient enum4linux-ng nbtscan onesixtyone masscan \
@@ -264,6 +266,7 @@ sudo -u $SUDO_USER bash -c "
     pipx install sublist3r
     pipx install uncompyle6
     pipx install wafw00f
+    pipx install jupyter
 "
 
 echo "[+] Installing Go Recon Tools (httpx, subfinder, feroxbuster)..."
@@ -378,12 +381,10 @@ sudo -u $SUDO_USER bash -c "
     source $NVM_DIR/nvm.sh && 
     nvm install --lts && 
     nvm alias default 'lts/*' &&
-    # Instalação global do TypeScript Compiler
     npm install -g typescript
 "
 
 echo "[+] Installing Java 17, Kotlin, Scala, Dart, Elixir/Erlang, and Maven (via SDKMAN)..."
-# MELHORIA: Adicionado Scala, Dart, Elixir, Erlang e Gradle/Maven
 sudo -u $SUDO_USER bash -c "
     source $HOME/.sdkman/bin/sdkman-init.sh && 
     sdk install java 17.0.10-tem && 
@@ -409,7 +410,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V3.4 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V3.5 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
