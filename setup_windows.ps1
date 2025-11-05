@@ -265,6 +265,22 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     Write-Host $_.Exception.Message
 }
 
+# --- 5.16: ADDITIONAL GUI APPLICATIONS & UTILITIES ---
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Green
+Write-Host "  INSTALLING GUI APPLICATIONS (PowerToys, WinMerge, Obsidian)" -ForegroundColor Green
+Write-Host "============================================================"
+Write-Host ""
+
+Write-Host "[+] Installing Microsoft PowerToys..." -ForegroundColor Cyan
+winget install Microsoft.PowerToys --accept-package-agreements --accept-source-agreements -h
+
+Write-Host "[+] Installing File Comparison Tool (WinMerge)..." -ForegroundColor Cyan
+choco upgrade winmerge -y
+
+Write-Host "[+] Installing Modern Notes App (Obsidian)..." -ForegroundColor Cyan
+winget install Obsidian.Obsidian --accept-package-agreements --accept-source-agreements -h
+
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
 Write-Host "================================================="
