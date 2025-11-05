@@ -2,15 +2,15 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 3.1 (Com Pipx e Limpeza de Sudo)
+#  Version 3.2 (Com Pipx, fd, httpx, subfinder e Lazydocker)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #  Features:
-#  - QoL: Zsh + P10k, eza, bat, fzf, etc.
+#  - QoL: Zsh + P10k, eza, bat, fzf, fd, duf.
 #  - Runtimes: SDKMAN (Java/Kotlin), NVM (Node), Pyenv (Python),
 #              Rbenv (Ruby), Go, Rust, PHP, Lua, .NET.
-#  - DevOps: Docker, Kubectl, Helm, Terraform, AWS, Azure.
-#  - Pentest: Kali-Linux toolset + GDB Enhanced Features (GEF) + Pipx (isolated Python tools).
+#  - DevOps: Docker, Kubectl, Helm, Terraform, AWS, Azure, Lazydocker.
+#  - Pentest: Kali-Linux toolset + GDB Enhanced Features (GEF) + Go Recon Tools.
 #
 # =============================================================================
 
@@ -19,8 +19,6 @@ export DEBIAN_FRONTEND=noninteractive
 
 # Request administrator (sudo) privileges at the start
 sudo -v
-
-# Removido: Loop while true para manter o sudo. O ticket padrão de 15min é mais seguro.
 
 echo "=========================================="
 echo "  Updating System (apt-get update/upgrade)..."
@@ -35,13 +33,12 @@ sudo apt-get upgrade -y
 echo "=========================================="
 echo "  Installing Core Build Tools (C/C++, Python, Shell)"
 echo "=========================================="
-# build-essential (gcc, g++, make), gdb (debugger), valgrind (memory)
-# binutils (binary tools), shellcheck (shell linter)
-# Python3 build dependencies (for pyenv)
-# Ruby build dependencies (for rbenv)
+# build-essential, gdb, valgrind, binutils, shellcheck
+# Adicionado python3-dev para garantir que pacotes python com dependências C sejam compilados
 sudo apt-get install -y \
   build-essential gdb valgrind binutils \
   shellcheck \
+  python3-dev \
   libssl-dev libffi-dev libbz2-dev libreadline-dev libsqlite3-dev liblzma-dev \
   autoconf bison patch libyaml-dev libtool
 
@@ -60,7 +57,6 @@ echo "=========================================="
 if ! command -v rustup &> /dev/null; then
     echo "Installing Rust (rustup)..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    # Add Rust to the current shell's PATH
     source "$HOME/.cargo/env"
 fi
 
@@ -117,7 +113,7 @@ if ! command -v poetry &> /dev/null; then
     echo "Installing Poetry (Project Manager)..."
     curl -sSL https://install.python-poetry.org | sudo -u $SUDO_USER python3 -
 fi
-# Adicionando pipx para ferramentas CLI isoladas (Melhoria)
+# Adicionando pipx para ferramentas CLI isoladas
 echo "Installing pipx (for isolated Python CLIs)..."
 sudo apt-get install -y pipx
 sudo -u $SUDO_USER bash -c "export PATH=\"$PATH\" && pipx ensurepath"
@@ -141,15 +137,21 @@ fi
 echo "=========================================="
 echo "  Installing Terminal QoL (Utilities)"
 echo "=========================================="
+# Adicionado fd-find e duf
 sudo apt-get install -y \
   tmux htop bat eza tldr \
   jq fzf ripgrep ncdu \
-  neovim
+  neovim fd-find duf
 
 # Fix 'bat' command name on Ubuntu
 if [ ! -L /usr/bin/bat ]; then
   sudo rm -f /usr/bin/bat
   sudo ln -s /usr/bin/batcat /usr/bin/bat
+fi
+# Fix 'fd' command name on Ubuntu
+if [ ! -L /usr/bin/fd ]; then
+  sudo rm -f /usr/bin/fd
+  sudo ln -s /usr/bin/fdfind /usr/bin/fd
 fi
 
 echo "=========================================="
@@ -181,6 +183,10 @@ echo "[+] Configuring passwordless sudo for Docker service..."
 sudo cp -f /etc/sudoers /etc/sudoers.bak
 echo "%docker ALL=(ALL) NOPASSWD: /usr/sbin/service docker *" | sudo tee /etc/sudoers.d/docker-nopasswd
 sudo chmod 0440 /etc/sudoers.d/docker-nopasswd
+
+# 2.1 Lazydocker (Adição: TUI para Docker)
+go install github.com/jesseduffield/lazydocker@latest
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/lazydocker /usr/local/bin/
 
 # 3. Helm (Kubernetes Package Manager)
 curl https://baltocdn.com/helm/signing.asc | sudo gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
@@ -276,8 +282,9 @@ sudo apt-get install -y \
 echo "=========================================="
 echo "  KALI PACK: RE, Forensics & GDB"
 echo "=========================================="
+# Adicionado radare2-r2pipe para automação
 sudo apt-get install -y \
-  binwalk radare2 foremost \
+  binwalk radare2 foremost radare2-r2pipe \
   sleuthkit volatility3
 
 echo "=========================================="
@@ -285,17 +292,23 @@ echo "  KALI PACK: Post-Exploitation & Python Tools"
 echo "=========================================="
 
 echo "[+] Installing Evil-WinRM (via Ruby)..."
-# É importante garantir que o rbenv esteja inicializado para o usuário SUDO_USER
 sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && gem install evil-winrm"
 
 echo "[+] Installing Python Pentest Tools (via pipx)..."
-# Usando pipx para instalar ferramentas Python em ambientes isolados (Melhoria)
 sudo -u $SUDO_USER bash -c "
     pipx install pwntools
     pipx install bloodhound-py
     pipx install sublist3r
     pipx install uncompyle6
 "
+
+# Adicionado ferramentas de Recon Go (httpx, subfinder)
+echo "[+] Installing Go Recon Tools (httpx, subfinder)..."
+go install github.com/projectdiscovery/httpx/cmd/httpx@latest
+go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/httpx /usr/local/bin/
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/subfinder /usr/local/bin/
+
 
 # Install GEF (GDB Enhanced Features)
 if [ ! -f "/home/${SUDO_USER}/.gdbinit-gef.py" ]; then
@@ -329,12 +342,16 @@ alias lt='eza -T'                      # 'tree' mode
 alias update='sudo apt-get update && sudo apt-get upgrade -y'
 alias cleanup='sudo apt-get autoremove -y && sudo apt-get clean'
 alias open='explorer.exe .' # Open directory in Windows Explorer
+alias c='clear'
+alias df='duf' # Novo alias para duf
+alias z='zoxide' # Alias para zoxide (se for instalado via choco no Windows ou via bash)
 " | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
 fi
 
 echo "=========================================="
 echo "  Adding Runtimes to Zsh (.zshrc)..."
 echo "=========================================="
+# ... (Seção 6.1 a 6.4 de Loaders inalterada) ...
 
 # SDKMAN Loader
 if ! grep -q "sdkman" "$ZSHRC_PATH"; then
@@ -367,7 +384,6 @@ export PATH="$PYENV_ROOT/bin:$PATH"
 if command -v pyenv 1>/dev/null 2>&1; then
   eval "$(pyenv init -)"
 fi
-# Adicionado PATH para binários Python instalados via pipx
 export PATH="$HOME/.local/bin:$PATH"
 ' | sudo -u $SUDO_USER tee -a $ZSHRC_PATH > /dev/null
 fi
@@ -395,19 +411,15 @@ echo "  Installing Default Language Versions..."
 echo "=========================================="
 
 echo "[+] Installing Node.js LTS (via NVM)..."
-# O bash -c externo garante que o script carregue o nvm.sh
 sudo -u $SUDO_USER bash -c "source $NVM_DIR/nvm.sh && nvm install --lts && nvm alias default 'lts/*'"
 
 echo "[+] Installing Java 17 & Kotlin (via SDKMAN)..."
-# O bash -c externo garante que o script carregue o sdkman-init.sh
 sudo -u $SUDO_USER bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 17.0.10-tem && sdk install kotlin"
 
 echo "[+] Installing Python 3.10 (via Pyenv)..."
-# O eval "$(pyenv init -)" interno é necessário para o pyenv funcionar
 sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pyenv install 3.10.13 && pyenv global 3.10.13"
 
 echo "[+] Installing Ruby 3.2.2 (via Rbenv)..."
-# O eval "$(rbenv init -)" interno é necessário para o rbenv funcionar
 sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && rbenv install 3.2.2 && rbenv global 3.2.2"
 
 # --- FINAL CLEANUP ---
@@ -418,7 +430,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V3.1 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V3.2 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
