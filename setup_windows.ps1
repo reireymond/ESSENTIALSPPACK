@@ -213,6 +213,9 @@ Set-PSReadLineOption -EditMode Emacs
 
 # Habilita o autocompletar "fantasma" (baseado no histórico)
 Set-PSReadLineOption -PredictionSource History
+
+# Libera bloqueio de execução de scripts locais
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # --- Productivity Pack End ---
 "@
     
