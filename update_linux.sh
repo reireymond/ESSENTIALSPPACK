@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - LINUX UPDATE Script
-#  Version 1.3 - Updates Snap, APT, Go, Pipx, Flatpak, Starship, and Conda.
+#  Version 2.0 - Updates Snap, APT, Go, Pipx, Flatpak, Starship, and Conda.
 #
 # =============================================================================
 
