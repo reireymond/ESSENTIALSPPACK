@@ -119,11 +119,16 @@ install_snap_packages() {
             echo "  ✓ $pkg (already installed)"
         else
             echo "  → Installing $pkg via snap..."
-            if sudo snap install "$pkg" --classic 2>/dev/null || sudo apt-get install -y "$pkg"; then
+            if sudo snap install "$pkg" --classic 2>/dev/null; then
                 echo "  ✓ $pkg installed"
             else
-                echo "  ✗ $pkg failed to install"
-                FAILED_PACKAGES+=("$pkg")
+                echo "  ✗ $pkg failed to install via snap, trying apt..."
+                if sudo apt-get install -y "$pkg" 2>/dev/null; then
+                    echo "  ✓ $pkg installed via apt"
+                else
+                    echo "  ✗ $pkg failed to install"
+                    FAILED_PACKAGES+=("$pkg")
+                fi
             fi
         fi
     done
@@ -205,13 +210,15 @@ install_radare2() {
     fi
     
     echo "  → Building and installing radare2..."
-    cd "$r2_dir"
-    if sudo -u "$CURRENT_USER" sys/install.sh; then
-        echo "  ✓ radare2 installed successfully"
-    else
-        echo "  ✗ radare2 failed to install"
-        FAILED_PACKAGES+=("radare2")
-    fi
+    (
+        cd "$r2_dir"
+        if sudo -u "$CURRENT_USER" sys/install.sh; then
+            echo "  ✓ radare2 installed successfully"
+        else
+            echo "  ✗ radare2 failed to install"
+            FAILED_PACKAGES+=("radare2")
+        fi
+    )
 }
 
 # Install Rust
