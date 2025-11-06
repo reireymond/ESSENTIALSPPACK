@@ -12,17 +12,17 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 3.7 (Refactoring: WSL Distro Param, Winget Error Check. New RE: IDA Free)
+    Version: 3.8 (Refactoring: WSL Distro Param, Winget Error Check. Language: English)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
 
 param(
-    [string]$WslDistro = "Ubuntu" # MELHORIA: Parâmetro para selecionar a distribuição WSL
+    [string]$WslDistro = "Ubuntu" # ENHANCEMENT: Parameter to select the WSL distribution
 )
 
-Set-StrictMode -Version Latest # MELHORIA: Força verificação rigorosa de erros
-$ErrorActionPreference = "Stop" # Garante que o script pare em erros críticos
+Set-StrictMode -Version Latest # ENHANCEMENT: Enforce strict error checking
+$ErrorActionPreference = "Stop" # Ensures the script stops on critical errors
 
 # --- 0. Helper Functions & Global Variables ---
 $Global:RebootIsNeeded = $false # We will track if a reboot is needed
@@ -46,22 +46,22 @@ function Test-RebootRequired {
     return $false
 }
 
-# Função para instalar módulo PS com checagem
+# Function to safely install PS module (after providers are set up)
 function Install-PSModuleSafely {
     param(
         [Parameter(Mandatory=$true)]
         [string]$Name
     )
     if (-not (Get-Module -ListAvailable -Name $Name)) {
-        Write-Host "Instalando módulo PowerShell: $Name..." -ForegroundColor Yellow
+        Write-Host "Installing PowerShell module: $Name..." -ForegroundColor Yellow
         Install-Module -Name $Name -Force -Scope CurrentUser -Confirm:$false -ForceBootstrap -ErrorAction Stop
     } else {
-        Write-Host "Módulo PowerShell '$Name' já instalado." -ForegroundColor Green
+        Write-Host "PowerShell module '$Name' already installed." -ForegroundColor Green
     }
 }
 
-# --- DEFINIÇÃO CENTRALIZADA DE PACOTES ---
-# Tipos: 'choco' (Chocolatey), 'winget' (Winget)
+# --- CENTRALIZED PACKAGE DEFINITIONS ---
+# Types: 'choco' (Chocolatey), 'winget' (Winget)
 $PackageDefinitions = @{
     "winget" = @{
         "Editors & Terminals" = @(
@@ -87,10 +87,10 @@ $PackageDefinitions = @{
         "Databases & API"       = @("dbeaver", "postman", "mariadb", "nginx")
         "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
         "Communication"         = @("discord")
-        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli", "helmfile") # ADIÇÃO: helmfile
-        "Runtimes Essenciais"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
+        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli", "helmfile")
+        "Runtimes Essentials"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
         "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier", "cheatengine")
-        "Reverse Engineering Pack" = @("ida-free", "rizin-cutter", "ollydbg", "hiew") # ADIÇÃO: PACK DE RE
+        "Reverse Engineering Pack" = @("ida-free", "rizin-cutter", "ollydbg", "hiew")
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
@@ -106,14 +106,14 @@ if (Test-RebootRequired) {
 # --- 1. Administrator Check (gsudo fallback) ---
 Write-Host "Checking for Administrator privileges..." -ForegroundColor Yellow
 if (-NOT ([System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    # Tenta relançar o script com gsudo se ele já estiver disponível no PATH
+    # Tries to relaunch the script with gsudo if it's already available in PATH
     if (Get-Command gsudo -ErrorAction SilentlyContinue) {
         Write-Host "Requesting Administrator privileges via gsudo..." -ForegroundColor Yellow
-        # Relança este script como admin e sai do atual
-        gsudo "$($PSCommandPath)" -WslDistro $WslDistro # Passa o parâmetro para a nova execução
+        # Relaunches this script as admin and exits the current one
+        gsudo "$($PSCommandPath)" -WslDistro $WslDistro # Passes the parameter to the new execution
         exit
     } else {
-        # Fallback para instrução manual se gsudo não estiver disponível (uso inicial)
+        # Fallback to manual instruction if gsudo is not available (initial run)
         Write-Host "ERROR: This script must be run as Administrator." -ForegroundColor Red
         Write-Host "Please right-click the script and 'Run as Administrator'." -ForegroundColor Red
         Read-Host "Press ENTER to exit..."
@@ -126,14 +126,14 @@ Write-Host "Administrator privileges confirmed." -ForegroundColor Green
 Write-Host ""
 Write-Host "Checking WSL 2 installation..." -ForegroundColor Yellow
 try {
-    # Usa o parâmetro $WslDistro para checar o status
+    # Uses the $WslDistro parameter to check status
     wsl -d $WslDistro --status | Out-Null
     Write-Host "WSL 2 is already installed. Distribution: $WslDistro" -ForegroundColor Green
 } catch {
     Write-Host "WSL 2 or distribution '$WslDistro' not found. Starting installation..." -ForegroundColor Yellow
     Write-Host "This may take a few minutes..."
     
-    # Instala o WSL ou a distribuição padrão
+    # Installs WSL or the default distribution
     wsl --install -d $WslDistro
     
     Write-Host ""
@@ -191,10 +191,10 @@ Write-Host ""
 $env:ChocolateyInstallArguments = "--yes" # Define for choco
 $WingetArguments = "--accept-package-agreements --accept-source-agreements -h" # Define for winget
 
-# 5.1: INSTALAÇÃO DE PACOTES GERAIS (CHOCOLATEY E WINGET)
+# 5.1: INSTALLATION OF GENERAL PACKAGES (CHOCOLATEY AND WINGET)
 foreach ($Manager in $PackageDefinitions.Keys) {
     Write-Host ""
-    Write-Host ">>> Iniciando instalações via $Manager..." -ForegroundColor Yellow
+    Write-Host ">>> Starting installations via $Manager..." -ForegroundColor Yellow
     
     foreach ($category in $PackageDefinitions[$Manager].Keys) {
         $packages = $PackageDefinitions[$Manager][$category]
@@ -208,33 +208,33 @@ foreach ($Manager in $PackageDefinitions.Keys) {
                 choco upgrade $packageNames -y -r --noprogress
             } elseif ($Manager -eq "winget") {
                 foreach ($pkg in $packages) {
-                    Write-Host "  -> Instalando $($pkg.Name) ($($pkg.ID))..."
+                    Write-Host "  -> Installing $($pkg.Name) ($($pkg.ID))..."
                     
-                    # MELHORIA: Verifica o ExitCode do winget para melhor tratamento de erro
+                    # ENHANCEMENT: Check Winget ExitCode for better error handling
                     $installResult = Start-Process -FilePath winget -ArgumentList "install $($pkg.ID) $WingetArguments" -Wait -NoNewWindow -PassThru -ErrorAction Stop
                     
                     if ($installResult.ExitCode -ne 0) {
-                        # Código 0x803d0006 é comum quando o pacote já está instalado ou em uso.
+                        # Code 0x803d0006 is common when the package is already installed or in use.
                         if ($installResult.ExitCode -eq 0x803d0006) {
-                            Write-Host "  -> AVISO: $($pkg.Name) falhou (código: $($installResult.ExitCode)). Possivelmente já instalado/em uso. Continuar." -ForegroundColor Yellow
+                            Write-Host "  -> WARNING: $($pkg.Name) failed (code: $($installResult.ExitCode)). Possibly already installed/in use. Continuing." -ForegroundColor Yellow
                         } else {
-                             # Lança exceção para ser capturada pelo 'catch'
-                             throw "Falha na instalação do Winget para $($pkg.Name) com ExitCode: $($installResult.ExitCode)"
+                             # Throws exception to be caught by 'catch'
+                             throw "Winget installation failed for $($pkg.Name) with ExitCode: $($installResult.ExitCode)"
                         }
                     } else {
-                        Write-Host "  -> $($pkg.Name) instalado com sucesso." -ForegroundColor Green
+                        Write-Host "  -> $($pkg.Name) installed successfully." -ForegroundColor Green
                     }
                 }
             }
         } catch {
-            Write-Host "AVISO: Falha grave na categoria '$category' via $Manager." -ForegroundColor Red
-            Write-Host "Detalhes: $_.Exception.Message" -ForegroundColor Red
-            # Não paramos o script aqui, apenas emitimos um aviso, pois é um lote grande.
+            Write-Host "WARNING: Critical failure in category '$category' via $Manager." -ForegroundColor Red
+            Write-Host "Details: $_.Exception.Message" -ForegroundColor Red
+            # Do not stop the script here, only issue a warning, as it is a large batch.
         }
     }
 }
 
-# 5.2: INSTALAÇÕES MANUAIS / COMPLEXAS
+# 5.2: MANUAL / COMPLEX INSTALLATIONS
 Write-Host ""
 Write-Host "================== LONG TASK WARNING (VS 2022) ==================" -ForegroundColor Yellow
 Write-Host "Starting 'Visual Studio 2022 Community' upgrade/install."
@@ -296,17 +296,20 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
 }
 
 
-# --- 6.1: CONFIGURANDO POWERSHELL 7 PROFILE (Productivity Pack) ---
-Write-Host "[+] Installing essential PowerShell Modules (Pester, PSReadLine)..." -ForegroundColor Yellow
+# --- 6.1: CONFIGURING POWERSHELL 7 PROFILE (Productivity Pack) ---
+# REFACTOR: Run dependency providers setup once before module installs
+Write-Host "[+] Setting up NuGet and PSGallery for module installation..." -ForegroundColor Yellow
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+
+Write-Host "[+] Installing essential PowerShell Modules (Pester, PSReadLine)..." -ForegroundColor Yellow
 Install-PSModuleSafely -Name "Pester"
 Install-PSModuleSafely -Name "PSReadLine"
 Install-PSModuleSafely -Name "Microsoft.PowerShell.Archive"
 
 Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
 try {
-    Write-Host "[+] Instalando 'Terminal-Icons' module..."
+    Write-Host "[+] Installing 'Terminal-Icons' module..."
     Install-PSModuleSafely -Name "Terminal-Icons"
 
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
@@ -406,12 +409,10 @@ Write-Host "============================================================"
 Write-Host ""
 
 Write-Host "[+] Installing/Checking 'PSWindowsUpdate' module..." -ForegroundColor Cyan
+Install-PSModuleSafely -Name "PSWindowsUpdate"
+Import-Module PSWindowsUpdate -Force
+
 try {
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
-    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-    Install-PSModuleSafely -Name "PSWindowsUpdate"
-    Import-Module PSWindowsUpdate -Force
-    
     Write-Host "[+] Searching, downloading, and installing all Windows Updates..." -ForegroundColor Yellow
     Write-Host "This is the other step that MAY TAKE A VERY LONG TIME. Please wait..."
     
