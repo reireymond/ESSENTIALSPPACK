@@ -9,7 +9,8 @@
     "Obsidian.Obsidian",
     "Git.Git",
     "RARLab.WinRAR",
-    "AnyDesk.AnyDesk"
+    "AnyDesk.AnyDesk",
+    "OWASP.ZAP"
   ],
   "choco": [
     "neovim",
