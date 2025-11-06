@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 4.2 (CRITICAL FIX: Choco batch install, Winget error codes, NuGet provider)
+    Version: 4.2 (FINAL: Individual package install, All names corrected, Rizin/Cutter separated)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -118,7 +118,7 @@ $PackageDefinitions = @{
         "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
         "Runtimes Essentials"  = @("vcredist-all", "dotnetfx", "directx")
         "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty.install", "zap", "ilspy", "volatility", "fiddler", "proxifier", "cheatengine")
-        "Reverse Engineering Pack" = @("ida-free", "rizin-cutter", "ollydbg", "hxd", "hiew")
+        "Reverse Engineering Pack" = @("ida-free", "rizin", "cutter", "ollydbg", "hxd", "hiew")
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
