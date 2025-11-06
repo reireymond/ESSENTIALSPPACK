@@ -542,11 +542,16 @@ foreach ($packageName in $PackageDefinitions.choco) {
             foreach ($product in $existingMySQL) {
                 Write-Host "    - $($product.Name) (v$($product.Version))" -ForegroundColor Yellow
             }
-            Write-Host "  Attempting to install/upgrade MariaDB anyway..." -ForegroundColor Yellow
+            
+            # --- INÍCIO DA CORREÇÃO ---
+            Write-Host "  ⊘ SKIPPING MariaDB installation to avoid conflicts and delays." -ForegroundColor Yellow
+            $Global:InstallSummary.Skipped += "mariadb (conflict with existing MySQL detected)"
+            # --- FIM DA CORREÇÃO ---
         }
-        
-        # --- CHAMADA MODIFICADA (NÍVEL 2) ---
-        Install-Package -PackageName $packageName -SpecialHandler $mariadbHandler -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
+        else {
+            # --- SÓ INSTALA SE NÃO HOUVER CONFLITO ---
+            Install-Package -PackageName $packageName -SpecialHandler $mariadbHandler -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
+        }
     }
     # Special handling for Visual Studio 2022 with extra parameters
     elseif ($packageName -eq "visualstudio2022community") {
