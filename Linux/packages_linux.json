@@ -98,7 +98,12 @@
     "wget",
     "git",
     "nginx",
-    "dotnet-sdk-8.0"
+    "dotnet-sdk-8.0",
+    "python3-venv",
+    "libxml2-dev",
+    "libxslt1-dev",
+    "libjpeg-dev",
+    "zlib1g-dev"
   ],
   "snap": [
     "kubectl"
@@ -116,10 +121,12 @@
     "semgrep",
     "mycli",
     "pgcli",
-    "pre-commit"
+    "pre-commit",
+    "frida-tools"
   ],
   "git": {
     "seclists": "https://github.com/danielmiessler/SecLists.git",
-    "exploitdb": "https://github.com/offensive-security/exploitdb.git"
+    "exploitdb": "https://github.com/offensive-security/exploitdb.git",
+    "mobsf": "https://github.com/MobSF/Mobile-Security-Framework-MobSF.git"
   }
 }
