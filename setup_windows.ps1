@@ -2,7 +2,7 @@
 .SYNOPSIS
     "Super" Master Script to configure the entire Windows + WSL environment.
 .DESCRIPTION
-    1. Guarantees Administrator privileges.
+    1. Guarantees Administrator privileges (using gsudo if available, or manual check).
     2. Installs WSL 2 (if not installed) and prompts for a required reboot.
     3. Installs Chocolatey (if not installed).
     4. Enables Chocolatey's auto-confirmation for scripts.
@@ -12,10 +12,12 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 3.4 (Substituído PicoTorrent por Free Download Manager)
+    Version: 3.5 (Adicionado fallback com gsudo na checagem de Admin)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
+
+$ErrorActionPreference = "Stop" # Stop on errors for robustness
 
 # --- 0. Helper Functions & Global Variables ---
 $Global:RebootIsNeeded = $false # We will track if a reboot is needed
@@ -92,10 +94,19 @@ $PackageDefinitions = @{
 # --- 1. Administrator Check ---
 Write-Host "Checking for Administrator privileges..." -ForegroundColor Yellow
 if (-NOT ([System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "ERROR: This script must be run as Administrator." -ForegroundColor Red
-    Write-Host "Please right-click the script and 'Run as Administrator'." -ForegroundColor Red
-    Read-Host "Press ENTER to exit..."
-    exit
+    # Tenta relançar o script com gsudo se ele já estiver disponível no PATH (uso subsequente ou instalação manual)
+    if (Get-Command gsudo -ErrorAction SilentlyContinue) {
+        Write-Host "Requesting Administrator privileges via gsudo..." -ForegroundColor Yellow
+        # Relança este script como admin e sai do atual
+        gsudo "$($PSCommandPath)"
+        exit
+    } else {
+        # Fallback para instrução manual se gsudo não estiver disponível (uso inicial)
+        Write-Host "ERROR: This script must be run as Administrator." -ForegroundColor Red
+        Write-Host "Please right-click the script and 'Run as Administrator'." -ForegroundColor Red
+        Read-Host "Press ENTER to exit..."
+        exit
+    }
 }
 Write-Host "Administrator privileges confirmed." -ForegroundColor Green
 
@@ -189,6 +200,7 @@ foreach ($Manager in $PackageDefinitions.Keys) {
             }
         } catch {
             Write-Host "AVISO: Falha ao instalar/atualizar um ou mais pacotes na categoria '$category' via $Manager." -ForegroundColor Yellow
+            # Não paramos o script aqui, apenas emitimos um aviso, pois é um lote grande.
         }
     }
 }
