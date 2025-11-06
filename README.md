@@ -76,10 +76,13 @@ O projeto inclui scripts dedicados para manter o ambiente atualizado.
 ```powershell
 # Atualiza Chocolatey, Winget e limpa o sistema
 .\update_windows.ps1
+```
 
 ### Linux
+```
 chmod +x update_linux.sh
 .\update_linux.sh
+```
 
 ---
 
