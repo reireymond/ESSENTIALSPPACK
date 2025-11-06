@@ -79,16 +79,13 @@ O projeto inclui scripts dedicados para manter o ambiente atualizado.
 ```
 
 ### Linux
-```
+```terminal
+# Atualiza e limpa o sistema
 chmod +x update_linux.sh
 .\update_linux.sh
 ```
 
 ---
-
-⚠️ Aviso Importante e Status do Projeto
-
-Este código está em constante atualização e aprimoramento. Novas ferramentas e otimizações são adicionadas regularmente, baseadas nas melhores práticas de desenvolvimento e cibersegurança.
 
 ## ⚠️ Aviso Importante e Status do Projeto
 
