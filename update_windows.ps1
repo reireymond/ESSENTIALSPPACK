@@ -7,7 +7,7 @@
     3. Updates all Chocolatey packages.
     4. Cleans all temporary files and optimizes the drive.
 .NOTES
-    Version: 2.0 (Merged cleanup & robust admin check)
+    Version: 3.0 (Fully English. Merged cleanup & robust admin check)
     Author: Kaua
 #>
 
