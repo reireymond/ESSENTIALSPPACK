@@ -12,12 +12,17 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 3.6 (Adicionado StrictMode, Checagem Inicial de Reboot, Novas Ferramentas, gsudo fallback)
+    Version: 3.7 (Refactoring: WSL Distro Param, Winget Error Check. New RE: IDA Free)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
 
+param(
+    [string]$WslDistro = "Ubuntu" # MELHORIA: Parâmetro para selecionar a distribuição WSL
+)
+
 Set-StrictMode -Version Latest # MELHORIA: Força verificação rigorosa de erros
+$ErrorActionPreference = "Stop" # Garante que o script pare em erros críticos
 
 # --- 0. Helper Functions & Global Variables ---
 $Global:RebootIsNeeded = $false # We will track if a reboot is needed
@@ -75,16 +80,17 @@ $PackageDefinitions = @{
         )
     }
     "choco" = @{
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "freedownloadmanager", "bandizip", "delta", "tokei") # ADIÇÃO: delta, tokei
-        "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk", "bun") # ADIÇÃO: bun
-        "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2", "ninja") # ADIÇÃO: ninja
+        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "freedownloadmanager", "bandizip", "delta", "tokei")
+        "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk", "bun")
+        "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2", "ninja")
         "Virtualization"        = @("docker-desktop", "virtualbox")
         "Databases & API"       = @("dbeaver", "postman", "mariadb", "nginx")
         "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
         "Communication"         = @("discord")
-        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
+        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli", "helmfile") # ADIÇÃO: helmfile
         "Runtimes Essenciais"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier", "cheatengine") # ADIÇÃO: cheatengine
+        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier", "cheatengine")
+        "Reverse Engineering Pack" = @("ida-free", "rizin-cutter", "ollydbg", "hiew") # ADIÇÃO: PACK DE RE
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
@@ -104,7 +110,7 @@ if (-NOT ([System.Security.Principal.WindowsPrincipal][System.Security.Principal
     if (Get-Command gsudo -ErrorAction SilentlyContinue) {
         Write-Host "Requesting Administrator privileges via gsudo..." -ForegroundColor Yellow
         # Relança este script como admin e sai do atual
-        gsudo "$($PSCommandPath)"
+        gsudo "$($PSCommandPath)" -WslDistro $WslDistro # Passa o parâmetro para a nova execução
         exit
     } else {
         # Fallback para instrução manual se gsudo não estiver disponível (uso inicial)
@@ -120,13 +126,15 @@ Write-Host "Administrator privileges confirmed." -ForegroundColor Green
 Write-Host ""
 Write-Host "Checking WSL 2 installation..." -ForegroundColor Yellow
 try {
-    wsl --status | Out-Null
-    Write-Host "WSL 2 is already installed." -ForegroundColor Green
+    # Usa o parâmetro $WslDistro para checar o status
+    wsl -d $WslDistro --status | Out-Null
+    Write-Host "WSL 2 is already installed. Distribution: $WslDistro" -ForegroundColor Green
 } catch {
-    Write-Host "WSL 2 not found. Starting installation..." -ForegroundColor Yellow
+    Write-Host "WSL 2 or distribution '$WslDistro' not found. Starting installation..." -ForegroundColor Yellow
     Write-Host "This may take a few minutes..."
     
-    wsl --install
+    # Instala o WSL ou a distribuição padrão
+    wsl --install -d $WslDistro
     
     Write-Host ""
     Write-Host "============================================================" -ForegroundColor Red
@@ -201,11 +209,26 @@ foreach ($Manager in $PackageDefinitions.Keys) {
             } elseif ($Manager -eq "winget") {
                 foreach ($pkg in $packages) {
                     Write-Host "  -> Instalando $($pkg.Name) ($($pkg.ID))..."
-                    winget install $($pkg.ID) $WingetArguments | Out-Null
+                    
+                    # MELHORIA: Verifica o ExitCode do winget para melhor tratamento de erro
+                    $installResult = Start-Process -FilePath winget -ArgumentList "install $($pkg.ID) $WingetArguments" -Wait -NoNewWindow -PassThru -ErrorAction Stop
+                    
+                    if ($installResult.ExitCode -ne 0) {
+                        # Código 0x803d0006 é comum quando o pacote já está instalado ou em uso.
+                        if ($installResult.ExitCode -eq 0x803d0006) {
+                            Write-Host "  -> AVISO: $($pkg.Name) falhou (código: $($installResult.ExitCode)). Possivelmente já instalado/em uso. Continuar." -ForegroundColor Yellow
+                        } else {
+                             # Lança exceção para ser capturada pelo 'catch'
+                             throw "Falha na instalação do Winget para $($pkg.Name) com ExitCode: $($installResult.ExitCode)"
+                        }
+                    } else {
+                        Write-Host "  -> $($pkg.Name) instalado com sucesso." -ForegroundColor Green
+                    }
                 }
             }
         } catch {
-            Write-Host "AVISO: Falha ao instalar/atualizar um ou mais pacotes na categoria '$category' via $Manager." -ForegroundColor Yellow
+            Write-Host "AVISO: Falha grave na categoria '$category' via $Manager." -ForegroundColor Red
+            Write-Host "Detalhes: $_.Exception.Message" -ForegroundColor Red
             # Não paramos o script aqui, apenas emitimos um aviso, pois é um lote grande.
         }
     }
@@ -334,7 +357,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # --- 7. EXECUTING WSL SCRIPT (Automated Section) ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
-Write-Host "  STARTING AUTOMATED WSL (UBUNTU) SETUP..." -ForegroundColor Green
+Write-Host "  STARTING AUTOMATED WSL ($WslDistro) SETUP..." -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
 
@@ -356,7 +379,7 @@ if (-not (Test-Path $wslScriptPath)) {
     
     Write-Host ""
     Write-Host "================== ATTENTION: SUDO PASSWORD ==================" -ForegroundColor Red
-    Write-Host "The script will now run the Ubuntu (WSL) setup."
+    Write-Host "The script will now run the $WslDistro (WSL) setup."
     Write-Host "The terminal WILL PAUSE and ask for your 'sudo' password (for Linux)."
     Write-Host "PLEASE TYPE YOUR UBUNTU PASSWORD AND PRESS ENTER."
     Write-Host "(You will not see characters as you type. This is normal.)"
@@ -365,9 +388,9 @@ if (-not (Test-Path $wslScriptPath)) {
     Write-Host "Starting 'wsl.exe'..." -ForegroundColor Yellow
     
     try {
-        wsl.exe -d Ubuntu sudo bash "$fullLinuxPath"
+        wsl.exe -d $WslDistro sudo bash "$fullLinuxPath"
         Write-Host "=================================================" -ForegroundColor Green
-        Write-Host "  WSL (UBUNTU) SETUP COMPLETE!" -ForegroundColor Green
+        Write-Host "  WSL ($WslDistro) SETUP COMPLETE!" -ForegroundColor Green
         Write-Host "================================================="
     } catch {
         Write-Host "ERROR: Failed to execute WSL script." -ForegroundColor Red
