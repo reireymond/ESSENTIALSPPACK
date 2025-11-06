@@ -12,9 +12,15 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 4.2 (FINAL: Individual package install, All names corrected, Rizin/Cutter separated)
+    Version: 4.3 (Enhanced: Robust error handling, fixed package names, detailed logging)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
+    IMPROVEMENTS: 
+    - Added Install-PackageWithChoco with comprehensive error handling
+    - Fixed broken packages: zap → owaspzap, freedownloadmanager → motrix
+    - Removed unstable packages: hiew, tokei (manual install recommended)
+    - Special MariaDB handling with conflict detection and MSI 1603 troubleshooting
+    - Detailed logging with JSON summary saved to %LOCALAPPDATA%\ESSENTIALSPPACK\
 #>
 
 param(
@@ -26,6 +32,11 @@ $ErrorActionPreference = "Stop"
 
 # --- 0. Helper Functions & Global Variables ---
 $Global:RebootIsNeeded = $false
+$Global:InstallSummary = @{
+    Succeeded = @()
+    Failed = @()
+    Skipped = @()
+}
 
 function Test-RebootRequired {
     try {
@@ -67,26 +78,154 @@ function Install-PSModuleSafely {
     }
 }
 
+function Write-InstallSummary {
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host "  INSTALLATION SUMMARY" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host ""
+    
+    Write-Host "✓ Succeeded ($($Global:InstallSummary.Succeeded.Count)):" -ForegroundColor Green
+    if ($Global:InstallSummary.Succeeded.Count -gt 0) {
+        foreach ($pkg in $Global:InstallSummary.Succeeded) {
+            Write-Host "  - $pkg" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "  (none)" -ForegroundColor Gray
+    }
+    
+    Write-Host ""
+    Write-Host "✗ Failed ($($Global:InstallSummary.Failed.Count)):" -ForegroundColor Red
+    if ($Global:InstallSummary.Failed.Count -gt 0) {
+        foreach ($pkg in $Global:InstallSummary.Failed) {
+            if ($pkg -is [hashtable]) {
+                Write-Host "  - $($pkg.Package) (Exit: $($pkg.ExitCode), Error: $($pkg.Error))" -ForegroundColor Red
+            } else {
+                Write-Host "  - $pkg" -ForegroundColor Red
+            }
+        }
+    } else {
+        Write-Host "  (none)" -ForegroundColor Gray
+    }
+    
+    Write-Host ""
+    Write-Host "⊘ Skipped ($($Global:InstallSummary.Skipped.Count)):" -ForegroundColor Yellow
+    if ($Global:InstallSummary.Skipped.Count -gt 0) {
+        foreach ($pkg in $Global:InstallSummary.Skipped) {
+            Write-Host "  - $pkg" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "  (none)" -ForegroundColor Gray
+    }
+    
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor Cyan
+    
+    # Create log directory
+    $logDir = Join-Path $env:LOCALAPPDATA "ESSENTIALSPPACK"
+    if (-not (Test-Path $logDir)) {
+        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    }
+    
+    # Generate log file name with timestamp
+    $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+    $logFile = Join-Path $logDir "install-log-$timestamp.json"
+    
+    # Prepare summary object for JSON
+    $summaryObject = @{
+        Timestamp = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+        ScriptVersion = "4.3"
+        Succeeded = $Global:InstallSummary.Succeeded
+        Failed = $Global:InstallSummary.Failed
+        Skipped = $Global:InstallSummary.Skipped
+        Statistics = @{
+            TotalSucceeded = $Global:InstallSummary.Succeeded.Count
+            TotalFailed = $Global:InstallSummary.Failed.Count
+            TotalSkipped = $Global:InstallSummary.Skipped.Count
+        }
+    }
+    
+    # Write to JSON file
+    try {
+        $summaryObject | ConvertTo-Json -Depth 10 | Out-File -FilePath $logFile -Encoding UTF8
+        Write-Host "Installation log saved to: $logFile" -ForegroundColor Green
+    } catch {
+        Write-Host "WARNING: Failed to write log file: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+function Install-PackageWithChoco {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$PackageName,
+        [string]$ExtraArgs = "",
+        [scriptblock]$SpecialHandler = $null
+    )
+    
+    Write-Host "  -> Installing/Upgrading: $PackageName" -ForegroundColor Cyan
+    
+    # Capture output and errors
+    $output = ""
+    $exitCode = 0
+    
+    try {
+        if ($ExtraArgs) {
+            $output = choco upgrade $PackageName -y --noprogress $ExtraArgs 2>&1 | Out-String
+        } else {
+            $output = choco upgrade $PackageName -y --noprogress 2>&1 | Out-String
+        }
+        $exitCode = $LASTEXITCODE
+    } catch {
+        $output = $_.Exception.Message
+        $exitCode = -1
+    }
+    
+    # Run special handler if provided
+    if ($null -ne $SpecialHandler) {
+        & $SpecialHandler -ExitCode $exitCode -Output $output -PackageName $PackageName
+    }
+    
+    # Standard exit code handling
+    if ($exitCode -eq 0) {
+        Write-Host "  ✓ $PackageName" -ForegroundColor Green
+        $Global:InstallSummary.Succeeded += $PackageName
+        return $true
+    } elseif ($exitCode -eq 1605 -or $exitCode -eq 1614 -or $exitCode -eq 1641) {
+        # 1605 = Product not found (already installed)
+        # 1614 = Product already installed
+        # 1641 = Restart initiated
+        Write-Host "  ✓ $PackageName (already installed or requires restart)" -ForegroundColor Green
+        $Global:InstallSummary.Succeeded += $PackageName
+        return $true
+    } elseif ($exitCode -eq 1603) {
+        # MSI fatal error - common with database packages
+        Write-Host "  ✗ $PackageName (MSI fatal error 1603)" -ForegroundColor Red
+        Write-Host "    Hint: Check for conflicting installations or locked files" -ForegroundColor Yellow
+        $Global:InstallSummary.Failed += @{
+            Package = $PackageName
+            ExitCode = $exitCode
+            Error = "MSI fatal error 1603"
+        }
+        return $false
+    } else {
+        Write-Host "  ✗ $PackageName (exit code: $exitCode)" -ForegroundColor Yellow
+        $Global:InstallSummary.Failed += @{
+            Package = $PackageName
+            ExitCode = $exitCode
+            Error = if ($output -match "error|failed") { ($output -split "`n" | Select-Object -First 3) -join "; " } else { "Unknown error" }
+        }
+        return $false
+    }
+}
+
+# Legacy wrapper for compatibility
 function Install-ChocoPackage {
     param(
         [Parameter(Mandatory=$true)]
         [string]$PackageName,
         [string]$ExtraArgs = ""
     )
-    
-    Write-Host "  -> Installing/Upgrading: $PackageName" -ForegroundColor Cyan
-    
-    if ($ExtraArgs) {
-        choco upgrade $PackageName -y --noprogress $ExtraArgs 2>&1 | Out-Null
-    } else {
-        choco upgrade $PackageName -y --noprogress 2>&1 | Out-Null
-    }
-    
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "  ✓ $PackageName" -ForegroundColor Green
-    } else {
-        Write-Host "  ✗ $PackageName (exit code: $LASTEXITCODE)" -ForegroundColor Yellow
-    }
+    Install-PackageWithChoco -PackageName $PackageName -ExtraArgs $ExtraArgs
 }
 
 # --- CENTRALIZED PACKAGE DEFINITIONS ---
@@ -108,17 +247,26 @@ $PackageDefinitions = @{
         )
     }
     "choco" = @{
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "freedownloadmanager", "bandizip", "delta", "tokei")
+        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "motrix", "bandizip", "delta")
+        # REMOVED: freedownloadmanager (unstable, replaced with motrix)
+        # REMOVED: tokei (frequently broken in Chocolatey; install manually from https://github.com/XAMPPRocky/tokei/releases if needed)
+        
         "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk", "bun")
         "Build Tools & Git"     = @("gh", "github-desktop", "msys2", "ninja", "cmake.install")
         "Virtualization"        = @("docker-desktop", "virtualbox")
-        "Databases & API"       = @("dbeaver", "postman", "mariadb", "nginx")
+        "Databases & API"       = @("dbeaver", "postman", "nginx")
+        # MariaDB handled separately below with special error handling
+        
         "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
         "Communication"         = @("discord")
         "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
         "Runtimes Essentials"  = @("vcredist-all", "dotnetfx", "directx")
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty.install", "zap", "ilspy", "volatility", "fiddler", "proxifier", "cheatengine")
-        "Reverse Engineering Pack" = @("ida-free", "rizin", "cutter", "ollydbg", "hxd", "hiew")
+        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty.install", "owaspzap", "ilspy", "volatility", "fiddler", "proxifier", "cheatengine")
+        # FIXED: zap → owaspzap (correct Chocolatey package ID)
+        
+        "Reverse Engineering Pack" = @("ida-free", "rizin", "cutter", "ollydbg", "hxd")
+        # REMOVED: hiew (frequently broken in Chocolatey; install manually from http://www.hiew.ru/ if needed)
+        
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
@@ -198,6 +346,12 @@ Write-Host "Enabling Chocolatey's automatic script confirmation..." -ForegroundC
 try {
     choco feature enable -n=allowGlobalConfirmation | Out-Null
     Write-Host "Feature 'allowGlobalConfirmation' enabled." -ForegroundColor Green
+    
+    # Verify the setting was applied
+    $confirmSetting = choco config list | Select-String "allowGlobalConfirmation"
+    if ($confirmSetting -match "Enabled") {
+        Write-Host "Verification: allowGlobalConfirmation is confirmed enabled." -ForegroundColor Green
+    }
 } catch {
     Write-Host "WARNING: Failed to enable 'allowGlobalConfirmation'." -ForegroundColor Yellow
 }
@@ -220,8 +374,50 @@ foreach ($category in $PackageDefinitions["choco"].Keys) {
     Write-Host "[+] Category: $category" -ForegroundColor Cyan
     
     foreach ($pkg in $packages) {
-        Install-ChocoPackage -PackageName $pkg
+        Install-PackageWithChoco -PackageName $pkg
     }
+}
+
+# 5.1.1: MARIADB SPECIAL HANDLING
+Write-Host ""
+Write-Host "[+] Special Package: MariaDB (with conflict detection)" -ForegroundColor Cyan
+
+# Check for existing MySQL/MariaDB installations
+$existingMySQL = Get-WmiObject -Class Win32_Product -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*MySQL*" -or $_.Name -like "*MariaDB*" }
+
+if ($existingMySQL) {
+    Write-Host "  ⚠ Existing MySQL/MariaDB installation detected:" -ForegroundColor Yellow
+    foreach ($product in $existingMySQL) {
+        Write-Host "    - $($product.Name) (v$($product.Version))" -ForegroundColor Yellow
+    }
+    Write-Host "  Attempting to install/upgrade MariaDB anyway..." -ForegroundColor Yellow
+}
+
+# MariaDB special handler for exit code 1603
+$mariadbHandler = {
+    param($ExitCode, $Output, $PackageName)
+    
+    if ($ExitCode -eq 1603) {
+        Write-Host ""
+        Write-Host "  ════════════════════════════════════════════════════════" -ForegroundColor Red
+        Write-Host "  MariaDB Installation Failed (MSI Error 1603)" -ForegroundColor Red
+        Write-Host "  ════════════════════════════════════════════════════════" -ForegroundColor Red
+        Write-Host "  Troubleshooting Steps:" -ForegroundColor Yellow
+        Write-Host "  1. Uninstall any existing MySQL/MariaDB installations via Control Panel" -ForegroundColor Yellow
+        Write-Host "  2. Delete C:\Program Files\MariaDB* and C:\ProgramData\MySQL folders" -ForegroundColor Yellow
+        Write-Host "  3. Restart your computer" -ForegroundColor Yellow
+        Write-Host "  4. Re-run this script to install MariaDB" -ForegroundColor Yellow
+        Write-Host "  ════════════════════════════════════════════════════════" -ForegroundColor Red
+        Write-Host ""
+        
+        $Global:InstallSummary.Skipped += "mariadb (conflict detected - manual intervention required)"
+    }
+}
+
+$mariadbResult = Install-PackageWithChoco -PackageName "mariadb" -SpecialHandler $mariadbHandler
+
+if (-not $mariadbResult) {
+    Write-Host "  → MariaDB installation skipped or failed. See troubleshooting hints above." -ForegroundColor Yellow
 }
 
 # 5.2: WINGET INSTALLATIONS
@@ -499,6 +695,9 @@ Write-Host "[+] Optimizing drive C:..." -ForegroundColor Cyan
 Optimize-Volume -DriveLetter C -ErrorAction SilentlyContinue | Out-Null
 
 Write-Host "System cleanup complete." -ForegroundColor Green
+
+# --- 9.1: WRITE INSTALLATION SUMMARY ---
+Write-InstallSummary
 
 # --- 10. Finalization ---
 Write-Host ""
