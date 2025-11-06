@@ -51,7 +51,7 @@ The Windows script is the main entry point and automatically triggers the WSL se
 
 1.  **Clone the Repository:**
     ```bash
-    git clone [https://github.com/reireymond/ESSENTIALSPPACK](https://github.com/reireymond/ESSENTIALSPPACK)
+    git clone https://github.com/reireymond/ESSENTIALSPPACK
     cd ESSENTIALSPPACK
     ```
 2.  **Execute the Script (as Administrator):**
@@ -70,7 +70,7 @@ Use the dedicated script for native Linux environments.
 
 1.  **Clone the Repository:**
     ```bash
-    git clone [https://github.com/reireymond/ESSENTIALSPPACK](https://github.com/reireymond/ESSENTIALSPPACK)
+    git clone https://github.com/reireymond/ESSENTIALSPPACK
     cd ESSENTIALSPPACK
     ```
 2.  **Execute the Script (as Administrator):**
@@ -92,7 +92,7 @@ Use the dedicated update scripts to keep all your packages and version managers 
 ```
 
 ### Linux
-```terminal
+```bash
 # Updates APT, Snap, Go, Pipx, Flatpak, and version managers
 chmod +x update_linux.sh
 ./update_linux.sh
