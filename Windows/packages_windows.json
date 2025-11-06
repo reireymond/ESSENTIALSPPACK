@@ -12,7 +12,9 @@
     "AnyDesk.AnyDesk",
     "ZAP.ZAP",
     "EclipseFoundation.EclipseIDE",
-    "EclipseAdoptium.Temurin.17.JDK"
+    "EclipseAdoptium.Temurin.17.JDK",
+    "EclipseAdoptium.Temurin.8.JRE",
+    "EclipseAdoptium.Temurin.21.JDK"
   ],
   "choco": [
     "neovim",
