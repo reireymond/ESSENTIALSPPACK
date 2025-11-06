@@ -59,25 +59,20 @@
     "Microsoft.AzureCLI",
     "Hashicorp.Terraform",
     "Kubernetes.kubectl",
-    "Nmap.Nmap",
-    "Wireshark.Wireshark",
+    "Insecure.Nmap",
+    "WiresharkFoundation.Wireshark",
     "PortSwigger.BurpSuite.Community",
-    "NationalSecurityAgency.Ghidra",
     "x64dbg.x64dbg",
-    "Microsoft.Sysinternals",
-    "hashcat.hashcat",
+    "Microsoft.Sysinternals.Suite",
     "SleuthKit.Autopsy",
     "PuTTY.PuTTY",
     "icsharpcode.ILSpy",
-    "VolatilityFoundation.Volatility3",
     "Telerik.Fiddler.Classic",
-    "CheatEngine.CheatEngine",
     "Rizin.Rizin",
     "Rizin.Cutter",
-    "MaElZe.HxD",
+    "MHNexus.HxD",
     "AlDanial.cloc",
-    "JanDeDobbeleer.OhMyPosh",
-    "Microsoft.CascadiaCode.NF"
+    "JanDeDobbeleer.OhMyPosh"
   ],
   "choco": [
     "prime95",
@@ -87,6 +82,12 @@
     "proxifier",
     "ida-free",
     "ollydbg",
+    "ghidra",
+    "hashcat",
+    "volatility",
+    "volatility3",
+    "cheatengine",
+    "nerd-fonts-cascadiacode",
     "visualstudio2022community"
   ]
 }
