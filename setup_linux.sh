@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - LINUX (Ubuntu/Debian) Setup Script
-#  Version 1.3 - Additions: Semgrep, Mycli/Pgcli, Go Witness, Conda. Language: English.
+#  Version 2.0 (Fully English. Additions: Semgrep, Mycli/Pgcli, Go Witness, Conda.)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #
@@ -118,7 +118,7 @@ echo "=========================================="
 echo "  Installing Browsers and Desktop Apps (Snap/APT)"
 echo "=========================================="
 # Installs Brave Browser via APT
-sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+sudo curl -fsSlo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list
 sudo apt-get update
 sudo apt-get install -y brave-browser
@@ -252,14 +252,14 @@ go install github.com/roboll/helmfile@latest
 go install github.com/aquasecurity/trivy/cmd/trivy@latest
 go install github.com/joshmedeski/gum@latest
 go install github.com/tomnomnom/gf@latest
-go install github.com/in-toto/go-witness/cmd/witness@latest # ADDITION: Go Witness
+go install github.com/in-toto/go-witness/cmd/witness@latest
 sudo ln -sf "$USER_HOME/go/bin/lazygit" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/lazydocker" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/helmfile" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/trivy" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/gum" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/gf" /usr/local/bin/
-sudo ln -sf "$USER_HOME/go/bin/witness" /usr/local/bin/ # ADDITION: Go Witness
+sudo ln -sf "$USER_HOME/go/bin/witness" /usr/local/bin/
 
 echo "=========================================="
 echo "  Installing Cloud & Infra Tools"
@@ -473,7 +473,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  LINUX SETUP V1.3 COMPLETE!"
+echo "  LINUX SETUP V2.0 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
