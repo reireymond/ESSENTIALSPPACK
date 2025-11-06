@@ -7,7 +7,8 @@
     "Insomnia.Insomnia",
     "Microsoft.PowerToys",
     "Obsidian.Obsidian",
-    "Git.Git"
+    "Git.Git",
+    "RARLab.WinRAR"
   ],
   "choco": [
     "neovim",
