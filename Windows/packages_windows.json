@@ -10,7 +10,8 @@
     "Git.Git",
     "RARLab.WinRAR",
     "AnyDesk.AnyDesk",
-    "ZAP.ZAP"
+    "ZAP.ZAP",
+    "EclipseFoundation.EclipseIDE"
   ],
   "choco": [
     "neovim",
