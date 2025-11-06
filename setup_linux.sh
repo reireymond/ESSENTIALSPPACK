@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - LINUX (Ubuntu/Debian) Setup Script
-#  Version 1.2 - Additions: LinuxToys, Starship, Flatpak, QoL Desktop, Trivy.
+#  Version 1.3 - Additions: Semgrep, Mycli/Pgcli, Go Witness, Conda. Language: English.
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #
@@ -182,6 +182,25 @@ fi
 echo "Installing pipx (for isolated Python CLIs)..."
 export PATH="$PATH" && pipx ensurepath
 
+echo "=========================================="
+echo "  Installing Miniconda (Optional for Data Science/RE)"
+echo "=========================================="
+MINICONDA_INSTALLER="Miniconda3-latest-Linux-x86_64.sh"
+if [ ! -d "$USER_HOME/miniconda3" ]; then
+    echo "[+] Installing Miniconda..."
+    # Download installer
+    wget https://repo.anaconda.com/miniconda/$MINICONDA_INSTALLER -O "$USER_HOME/$MINICONDA_INSTALLER"
+    # Execute installer without prompt and clean up
+    bash "$USER_HOME/$MINICONDA_INSTALLER" -b -p "$USER_HOME/miniconda3"
+    rm "$USER_HOME/$MINICONDA_INSTALLER"
+    
+    # Initialize Conda (optional step to add to shell)
+    # The user must decide if they want Conda in their prompt (base environment)
+    echo "" >> "$ZSHRC_PATH"
+    echo "# --- Miniconda/Conda Loader (Manual Activation Required) ---" >> "$ZSHRC_PATH"
+    echo "# To activate, run: $HOME/miniconda3/bin/conda init zsh" >> "$ZSHRC_PATH"
+fi
+
 
 echo "=========================================="
 echo "  Installing Rbenv (Ruby Version Manager)"
@@ -233,12 +252,14 @@ go install github.com/roboll/helmfile@latest
 go install github.com/aquasecurity/trivy/cmd/trivy@latest
 go install github.com/joshmedeski/gum@latest
 go install github.com/tomnomnom/gf@latest
+go install github.com/in-toto/go-witness/cmd/witness@latest # ADDITION: Go Witness
 sudo ln -sf "$USER_HOME/go/bin/lazygit" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/lazydocker" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/helmfile" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/trivy" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/gum" /usr/local/bin/
 sudo ln -sf "$USER_HOME/go/bin/gf" /usr/local/bin/
+sudo ln -sf "$USER_HOME/go/bin/witness" /usr/local/bin/ # ADDITION: Go Witness
 
 echo "=========================================="
 echo "  Installing Cloud & Infra Tools"
@@ -272,10 +293,11 @@ sudo apt-get install -y helm terraform
 echo "=========================================="
 echo "  KALI PACK: Post-Exploitation & Go/Python Tools"
 echo "=========================================="
-# Evil-WinRM (via Ruby)
+
+echo "[+] Installing Evil-WinRM (via Ruby)..."
 eval "$(rbenv init -)" && gem install evil-winrm
 
-# Python Pentest Tools (via pipx)
+echo "[+] Installing Python Pentest Tools (via pipx)..."
 pipx install pwntools
 pipx install bloodhound-py
 pipx install sublist3r
@@ -285,8 +307,13 @@ pipx install jupyter
 pipx install pwncat-cs
 pipx install interlace
 pipx install sslyze
+pipx install semgrep
+pipx install mycli
+pipx install pgcli
+pipx install pre-commit
 
-# Go Recon Tools (httpx, subfinder, feroxbuster, nuclei)
+
+echo "[+] Installing Go Recon Tools (httpx, subfinder, feroxbuster, nuclei)..."
 go install github.com/projectdiscovery/httpx/cmd/httpx@latest
 go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 go install github.com/epi052/feroxbuster/cmd/feroxbuster@latest
@@ -375,6 +402,9 @@ if command -v starship 1>/dev/null 2>&1; then
     eval "$(starship init zsh)"
 fi
 
+# --- Miniconda/Conda Loader (Manual Activation Required) ---
+# To activate, run: $HOME/miniconda3/bin/conda init zsh
+
 # --- SDKMAN Loader ---
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
@@ -443,11 +473,12 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  LINUX SETUP V1.2 COMPLETE!"
+echo "  LINUX SETUP V1.3 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
 echo "1. Please close and reopen your terminal (it will be Zsh, not Bash)."
 echo "2. The Powerlevel10k (p10k) wizard will run on first launch."
 echo "3. You can disable P10k and use Starship for an even lighter/more customizable prompt."
+echo "4. Miniconda is installed in $HOME/miniconda3. Run: $HOME/miniconda3/bin/conda init zsh to activate."
 echo ""
