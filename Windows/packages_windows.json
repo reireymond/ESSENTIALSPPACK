@@ -73,7 +73,9 @@
     "MHNexus.HxD",
     "AlDanial.cloc",
     "JanDeDobbeleer.OhMyPosh",
-    "IObit.IObitUnlocker"
+    "IObit.IObitUnlocker",
+    "JetBrains.IntelliJIDEA.Community",
+    "JetBrains.PyCharm.Community"
   ],
   "choco": [
     "prime95",
