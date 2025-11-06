@@ -6,20 +6,20 @@
     2. Installs WSL 2 (if not installed) and prompts for a required reboot.
     3. Installs Chocolatey (if not installed).
     4. Enables Chocolatey's auto-confirmation for scripts.
-    5. Installs/Upgrades ALL Windows tools via Chocolatey (centralized batches).
+    5. Installs/Upgrades ALL Windows tools via Winget (priority) and Chocolatey (fallback).
     6. Installs essential VS Code Extensions.
     7. Automatically executes the 'wsl_ubuntu.sh' script.
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 4.3 (Enhanced: Robust error handling, fixed package names, detailed logging)
+    Version: 5.0 (Refactored: JSON config, hybrid install, smart existence checks)
     Author: Kaua
-    LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
+    LOGIC: Uses hybrid Install-Package function with winget priority and choco fallback.
     IMPROVEMENTS: 
-    - Added Install-PackageWithChoco with comprehensive error handling
-    - Fixed broken packages: zap → owaspzap, freedownloadmanager → motrix
-    - Removed unstable packages: hiew, tokei (manual install recommended)
-    - Special MariaDB handling with conflict detection and MSI 1603 troubleshooting
+    - Externalized packages to packages_windows.json for easy maintenance
+    - Hybrid Install-Package function with smart existence checks
+    - Added hxd and cloc packages as requested
+    - Maintains special handling for MariaDB and Visual Studio
     - Detailed logging with JSON summary saved to %LOCALAPPDATA%\ESSENTIALSPPACK\
 #>
 
@@ -134,7 +134,7 @@ function Write-InstallSummary {
     # Prepare summary object for JSON
     $summaryObject = @{
         Timestamp = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-        ScriptVersion = "4.3"
+        ScriptVersion = "5.0"
         Succeeded = $Global:InstallSummary.Succeeded
         Failed = $Global:InstallSummary.Failed
         Skipped = $Global:InstallSummary.Skipped
@@ -228,46 +228,124 @@ function Install-ChocoPackage {
     Install-PackageWithChoco -PackageName $PackageName -ExtraArgs $ExtraArgs
 }
 
-# --- CENTRALIZED PACKAGE DEFINITIONS ---
-$PackageDefinitions = @{
-    "winget" = @{
-        "Editors & Terminals" = @(
-            @{ID="Microsoft.VisualStudioCode"; Name="VS Code"}
-            @{ID="Microsoft.WindowsTerminal"; Name="Windows Terminal"}
-        )
-        "Browsers" = @(
-            @{ID="Google.Chrome"; Name="Google Chrome"}
-            @{ID="Mozilla.Firefox"; Name="Mozilla Firefox"}
-        )
-        "Advanced Utilities & Security" = @(
-            @{ID="Insomnia.Insomnia"; Name="Insomnia API Client"}
-            @{ID="Microsoft.PowerToys"; Name="Microsoft PowerToys"}
-            @{ID="Obsidian.Obsidian"; Name="Obsidian Notes"}
-            @{ID="Git.Git"; Name="Git for Windows"}
-        )
+# --- LOAD PACKAGE DEFINITIONS FROM JSON ---
+$PackageJsonPath = Join-Path $PSScriptRoot "packages_windows.json"
+if (-not (Test-Path $PackageJsonPath)) {
+    Write-Host "ERROR: packages_windows.json not found at: $PackageJsonPath" -ForegroundColor Red
+    Read-Host "Press ENTER to exit..."
+    exit
+}
+
+try {
+    $PackageDefinitions = Get-Content $PackageJsonPath -Raw | ConvertFrom-Json
+    Write-Host "Package definitions loaded from JSON successfully." -ForegroundColor Green
+} catch {
+    Write-Host "ERROR: Failed to parse packages_windows.json" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Read-Host "Press ENTER to exit..."
+    exit
+}
+
+# --- HYBRID INSTALLATION FUNCTION ---
+function Install-Package {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$PackageName,
+        [string]$WingetId = "",
+        [scriptblock]$SpecialHandler = $null
+    )
+    
+    Write-Host "  -> Installing: $PackageName" -ForegroundColor Cyan
+    
+    # Check if package is already installed (winget check)
+    if ($WingetId) {
+        try {
+            $wingetList = winget list --id $WingetId 2>&1
+            if ($LASTEXITCODE -eq 0 -and $wingetList -match $WingetId) {
+                Write-Host "  ✓ $PackageName (already installed via winget)" -ForegroundColor Green
+                $Global:InstallSummary.Succeeded += $PackageName
+                return $true
+            }
+        } catch {
+            # Continue to installation
+        }
     }
-    "choco" = @{
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "motrix", "bandizip", "delta")
-        # REMOVED: freedownloadmanager (unstable, replaced with motrix)
-        # REMOVED: tokei (frequently broken in Chocolatey; install manually from https://github.com/XAMPPRocky/tokei/releases if needed)
+    
+    # Check if package is already installed (choco check)
+    try {
+        $chocoList = choco list --local-only $PackageName --exact 2>&1
+        if ($LASTEXITCODE -eq 0 -and $chocoList -match "1 packages installed") {
+            Write-Host "  ✓ $PackageName (already installed via choco)" -ForegroundColor Green
+            $Global:InstallSummary.Succeeded += $PackageName
+            return $true
+        }
+    } catch {
+        # Continue to installation
+    }
+    
+    # Try winget first if WingetId is provided
+    if ($WingetId) {
+        Write-Host "    Trying winget..." -ForegroundColor Gray
+        $installResult = Start-Process -FilePath winget -ArgumentList "install --id $WingetId --accept-package-agreements --accept-source-agreements -h" -Wait -NoNewWindow -PassThru -ErrorAction SilentlyContinue
         
-        "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk", "bun")
-        "Build Tools & Git"     = @("gh", "github-desktop", "msys2", "ninja", "cmake.install")
-        "Virtualization"        = @("docker-desktop", "virtualbox")
-        "Databases & API"       = @("dbeaver", "postman", "nginx")
-        # MariaDB handled separately below with special error handling
+        if ($null -ne $installResult -and $installResult.ExitCode -eq 0) {
+            Write-Host "  ✓ $PackageName (installed via winget)" -ForegroundColor Green
+            $Global:InstallSummary.Succeeded += $PackageName
+            return $true
+        } elseif ($null -ne $installResult -and $installResult.ExitCode -eq -1978335189) {
+            # Already up to date
+            Write-Host "  ✓ $PackageName (already up to date via winget)" -ForegroundColor Green
+            $Global:InstallSummary.Succeeded += $PackageName
+            return $true
+        }
         
-        "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
-        "Communication"         = @("discord")
-        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
-        "Runtimes Essentials"  = @("vcredist-all", "dotnetfx", "directx")
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty.install", "owaspzap", "ilspy", "volatility", "fiddler", "proxifier", "cheatengine")
-        # FIXED: zap → owaspzap (correct Chocolatey package ID)
-        
-        "Reverse Engineering Pack" = @("ida-free", "rizin", "cutter", "ollydbg", "hxd")
-        # REMOVED: hiew (frequently broken in Chocolatey; install manually from http://www.hiew.ru/ if needed)
-        
-        "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
+        Write-Host "    Winget failed, trying chocolatey..." -ForegroundColor Yellow
+    }
+    
+    # Try chocolatey as fallback or primary method
+    $output = ""
+    $exitCode = 0
+    
+    try {
+        $output = choco upgrade $PackageName -y --noprogress 2>&1 | Out-String
+        $exitCode = $LASTEXITCODE
+    } catch {
+        $output = $_.Exception.Message
+        $exitCode = -1
+    }
+    
+    # Run special handler if provided
+    if ($null -ne $SpecialHandler) {
+        & $SpecialHandler -ExitCode $exitCode -Output $output -PackageName $PackageName
+    }
+    
+    # Standard exit code handling
+    if ($exitCode -eq 0) {
+        Write-Host "  ✓ $PackageName (installed via choco)" -ForegroundColor Green
+        $Global:InstallSummary.Succeeded += $PackageName
+        return $true
+    } elseif ($exitCode -eq 1605 -or $exitCode -eq 1614 -or $exitCode -eq 1641) {
+        # Already installed or requires restart
+        Write-Host "  ✓ $PackageName (already installed or requires restart)" -ForegroundColor Green
+        $Global:InstallSummary.Succeeded += $PackageName
+        return $true
+    } elseif ($exitCode -eq 1603) {
+        # MSI fatal error
+        Write-Host "  ✗ $PackageName (MSI fatal error 1603)" -ForegroundColor Red
+        $Global:InstallSummary.Failed += @{
+            Package = $PackageName
+            ExitCode = $exitCode
+            Error = "MSI fatal error 1603"
+        }
+        return $false
+    } else {
+        Write-Host "  ✗ $PackageName (exit code: $exitCode)" -ForegroundColor Yellow
+        $Global:InstallSummary.Failed += @{
+            Package = $PackageName
+            ExitCode = $exitCode
+            Error = if ($output -match "error|failed") { ($output -split "`n" | Select-Object -First 3) -join "; " } else { "Unknown error" }
+        }
+        return $false
     }
 }
 
@@ -363,35 +441,20 @@ Write-Host "  STARTING INSTALLATION/UPGRADE OF WINDOWS TOOLS" -ForegroundColor G
 Write-Host "============================================================"
 Write-Host ""
 
-# 5.1: CHOCOLATEY INSTALLATIONS (ONE BY ONE FOR PROPER ERROR HANDLING)
-Write-Host ">>> Starting Chocolatey installations..." -ForegroundColor Yellow
-
-foreach ($category in $PackageDefinitions["choco"].Keys) {
-    $packages = $PackageDefinitions["choco"][$category]
-    if ($packages.Count -eq 0) { continue }
-    
-    Write-Host ""
-    Write-Host "[+] Category: $category" -ForegroundColor Cyan
-    
-    foreach ($pkg in $packages) {
-        Install-PackageWithChoco -PackageName $pkg
-    }
-}
-
-# 5.1.1: MARIADB SPECIAL HANDLING
+# 5.1: INSTALL WINGET PACKAGES (Priority: try winget first, fallback to choco)
+Write-Host ">>> Starting Winget package installations (with Chocolatey fallback)..." -ForegroundColor Yellow
 Write-Host ""
-Write-Host "[+] Special Package: MariaDB (with conflict detection)" -ForegroundColor Cyan
+Write-Host "[+] Installing Winget packages (priority method)" -ForegroundColor Cyan
 
-# Check for existing MySQL/MariaDB installations
-$existingMySQL = Get-WmiObject -Class Win32_Product -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*MySQL*" -or $_.Name -like "*MariaDB*" }
-
-if ($existingMySQL) {
-    Write-Host "  ⚠ Existing MySQL/MariaDB installation detected:" -ForegroundColor Yellow
-    foreach ($product in $existingMySQL) {
-        Write-Host "    - $($product.Name) (v$($product.Version))" -ForegroundColor Yellow
-    }
-    Write-Host "  Attempting to install/upgrade MariaDB anyway..." -ForegroundColor Yellow
+foreach ($packageId in $PackageDefinitions.winget) {
+    Install-Package -PackageName $packageId -WingetId $packageId
 }
+
+# 5.2: INSTALL CHOCOLATEY-ONLY PACKAGES
+Write-Host ""
+Write-Host ">>> Starting Chocolatey-only package installations..." -ForegroundColor Yellow
+Write-Host ""
+Write-Host "[+] Installing Chocolatey packages" -ForegroundColor Cyan
 
 # MariaDB special handler for exit code 1603
 $mariadbHandler = {
@@ -414,61 +477,38 @@ $mariadbHandler = {
     }
 }
 
-$mariadbResult = Install-PackageWithChoco -PackageName "mariadb" -SpecialHandler $mariadbHandler
-
-if (-not $mariadbResult) {
-    Write-Host "  → MariaDB installation skipped or failed. See troubleshooting hints above." -ForegroundColor Yellow
-}
-
-# 5.2: WINGET INSTALLATIONS
-Write-Host ""
-Write-Host ">>> Starting Winget installations..." -ForegroundColor Yellow
-$WingetArguments = "--accept-package-agreements --accept-source-agreements -h"
-
-foreach ($category in $PackageDefinitions["winget"].Keys) {
-    $packages = $PackageDefinitions["winget"][$category]
-    if ($packages.Count -eq 0) { continue }
-    
-    Write-Host ""
-    Write-Host "[+] Category: $category" -ForegroundColor Cyan
-    
-    foreach ($pkg in $packages) {
-        Write-Host "  -> Installing $($pkg.Name) ($($pkg.ID))..." -ForegroundColor Cyan
+foreach ($packageName in $PackageDefinitions.choco) {
+    # Special handling for mariadb
+    if ($packageName -eq "mariadb") {
+        # Check for existing MySQL/MariaDB installations
+        $existingMySQL = Get-WmiObject -Class Win32_Product -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*MySQL*" -or $_.Name -like "*MariaDB*" }
         
-        $installResult = Start-Process -FilePath winget -ArgumentList "install $($pkg.ID) $WingetArguments" -Wait -NoNewWindow -PassThru -ErrorAction SilentlyContinue
+        if ($existingMySQL) {
+            Write-Host "  ⚠ Existing MySQL/MariaDB installation detected:" -ForegroundColor Yellow
+            foreach ($product in $existingMySQL) {
+                Write-Host "    - $($product.Name) (v$($product.Version))" -ForegroundColor Yellow
+            }
+            Write-Host "  Attempting to install/upgrade MariaDB anyway..." -ForegroundColor Yellow
+        }
         
-        # Winget exit codes:
-        # 0 = Success
-        # -1978335189 (0x8A15000B) = No applicable update found (already up to date)
-        # -1978335212 (0x8A150014) = Package not found
+        Install-Package -PackageName $packageName -SpecialHandler $mariadbHandler
+    }
+    # Special handling for Visual Studio 2022 with extra parameters
+    elseif ($packageName -eq "visualstudio2022community") {
+        Write-Host ""
+        Write-Host "================== LONG TASK WARNING (VS 2022) ==================" -ForegroundColor Yellow
+        Write-Host "Starting 'Visual Studio 2022 Community' upgrade/install."
+        Write-Host "This is the largest download and can take 30-60 minutes."
+        Write-Host "================================================================="
+        Write-Host ""
         
-        if ($null -eq $installResult) {
-            Write-Host "  ✗ Failed to launch Winget for $($pkg.Name)" -ForegroundColor Yellow
-        }
-        elseif ($installResult.ExitCode -eq 0) {
-            Write-Host "  ✓ $($pkg.Name) installed/updated" -ForegroundColor Green
-        }
-        elseif ($installResult.ExitCode -eq -1978335189) {
-            Write-Host "  ✓ $($pkg.Name) (already up to date)" -ForegroundColor Green
-        }
-        elseif ($installResult.ExitCode -eq -1978335212) {
-            Write-Host "  ✗ $($pkg.Name) not found in Winget repository" -ForegroundColor Yellow
-        }
-        else {
-            Write-Host "  ✗ $($pkg.Name) (exit code: $($installResult.ExitCode))" -ForegroundColor Yellow
-        }
+        # For VS2022, we need to use the old function with special parameters
+        Install-PackageWithChoco -PackageName $packageName -ExtraArgs "--package-parameters `"--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet`""
+    }
+    else {
+        Install-Package -PackageName $packageName
     }
 }
-
-# 5.3: VISUAL STUDIO 2022 (SEPARATE INSTALLATION)
-Write-Host ""
-Write-Host "================== LONG TASK WARNING (VS 2022) ==================" -ForegroundColor Yellow
-Write-Host "Starting 'Visual Studio 2022 Community' upgrade/install."
-Write-Host "This is the largest download and can take 30-60 minutes."
-Write-Host "================================================================="
-Write-Host ""
-
-Install-ChocoPackage -PackageName "visualstudio2022community" -ExtraArgs "--package-parameters `"--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet`""
 
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
