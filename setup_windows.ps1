@@ -12,41 +12,44 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 4.0 (Refactoring: Fully English, Optimized PS Module Install)
+    Version: 4.2 (CRITICAL FIX: Choco batch install, Winget error codes, NuGet provider)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
 
 param(
-    [string]$WslDistro = "Ubuntu" # ENHANCEMENT: Parameter to select the WSL distribution
+    [string]$WslDistro = "Ubuntu"
 )
 
-Set-StrictMode -Version Latest # ENHANCEMENT: Enforce strict error checking
-$ErrorActionPreference = "Stop" # Ensures the script stops on critical errors
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 # --- 0. Helper Functions & Global Variables ---
-$Global:RebootIsNeeded = $false # We will track if a reboot is needed
+$Global:RebootIsNeeded = $false
 
-# Robust function to check for any pending reboots (Registry or WU)
 function Test-RebootRequired {
-    # Check Windows Update Module first
     try {
-        if (Test-PendingReboot -ErrorAction SilentlyContinue) { return $true }
+        if (Get-Command Test-PendingReboot -ErrorAction SilentlyContinue) {
+            if (Test-PendingReboot -ErrorAction SilentlyContinue) { return $true }
+        }
     } catch {}
     
-    # Check common registry keys
     $RegKeys = @(
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired",
-        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending",
-        "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending"
     )
-    if (Get-ItemProperty -Path $RegKeys -Name "PendingFileRenameOperations" -ErrorAction SilentlyContinue) {
+    
+    foreach ($key in $RegKeys) {
+        if (Test-Path $key) { return $true }
+    }
+    
+    if (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name "PendingFileRenameOperations" -ErrorAction SilentlyContinue) {
         return $true
     }
+    
     return $false
 }
 
-# Function to safely install PS module (after providers are set up)
 function Install-PSModuleSafely {
     param(
         [Parameter(Mandatory=$true)]
@@ -54,14 +57,39 @@ function Install-PSModuleSafely {
     )
     if (-not (Get-Module -ListAvailable -Name $Name)) {
         Write-Host "Installing PowerShell module: $Name..." -ForegroundColor Yellow
-        Install-Module -Name $Name -Force -Scope CurrentUser -Confirm:$false -ForceBootstrap -ErrorAction Stop
+        try {
+            Install-Module -Name $Name -Force -Scope CurrentUser -AllowClobber -SkipPublisherCheck -ErrorAction Stop
+        } catch {
+            Write-Host "  WARNING: Failed to install $Name - $($_.Exception.Message)" -ForegroundColor Yellow
+        }
     } else {
         Write-Host "PowerShell module '$Name' already installed." -ForegroundColor Green
     }
 }
 
+function Install-ChocoPackage {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$PackageName,
+        [string]$ExtraArgs = ""
+    )
+    
+    Write-Host "  -> Installing/Upgrading: $PackageName" -ForegroundColor Cyan
+    
+    if ($ExtraArgs) {
+        choco upgrade $PackageName -y --noprogress $ExtraArgs 2>&1 | Out-Null
+    } else {
+        choco upgrade $PackageName -y --noprogress 2>&1 | Out-Null
+    }
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  ✓ $PackageName" -ForegroundColor Green
+    } else {
+        Write-Host "  ✗ $PackageName (exit code: $LASTEXITCODE)" -ForegroundColor Yellow
+    }
+}
+
 # --- CENTRALIZED PACKAGE DEFINITIONS ---
-# Types: 'choco' (Chocolatey), 'winget' (Winget)
 $PackageDefinitions = @{
     "winget" = @{
         "Editors & Terminals" = @(
@@ -76,44 +104,40 @@ $PackageDefinitions = @{
             @{ID="Insomnia.Insomnia"; Name="Insomnia API Client"}
             @{ID="Microsoft.PowerToys"; Name="Microsoft PowerToys"}
             @{ID="Obsidian.Obsidian"; Name="Obsidian Notes"}
-            @{ID="Git.CredentialManager"; Name="Git Credential Manager"}
+            @{ID="Git.Git"; Name="Git for Windows"}
         )
     }
     "choco" = @{
         "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "freedownloadmanager", "bandizip", "delta", "tokei")
         "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk", "bun")
-        "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2", "ninja")
+        "Build Tools & Git"     = @("gh", "github-desktop", "msys2", "ninja", "cmake.install")
         "Virtualization"        = @("docker-desktop", "virtualbox")
         "Databases & API"       = @("dbeaver", "postman", "mariadb", "nginx")
         "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
         "Communication"         = @("discord")
-        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli", "helmfile")
-        "Runtimes Essentials"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier", "cheatengine")
-        "Reverse Engineering Pack" = @("ida-free", "rizin-cutter", "ollydbg", "hiew")
+        "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
+        "Runtimes Essentials"  = @("vcredist-all", "dotnetfx", "directx")
+        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty.install", "zap", "ilspy", "volatility", "fiddler", "proxifier", "cheatengine")
+        "Reverse Engineering Pack" = @("ida-free", "rizin-cutter", "ollydbg", "hxd", "hiew")
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
-# ----------------------------------------------
 
 # --- 0.1. Check for Pending Reboot (Initial Check) ---
 if (Test-RebootRequired) {
     Write-Host "WARNING: A pending system reboot was detected." -ForegroundColor Red
-    Write-Host "It is highly recommended to reboot the PC before continuing, as installation steps might fail." -ForegroundColor Yellow
+    Write-Host "It is highly recommended to reboot the PC before continuing." -ForegroundColor Yellow
     Read-Host "Press ENTER to continue anyway, or close the window to reboot..."
 }
 
 # --- 1. Administrator Check (gsudo fallback) ---
 Write-Host "Checking for Administrator privileges..." -ForegroundColor Yellow
-if (-NOT ([System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    # Tries to relaunch the script with gsudo if it's already available in PATH
+if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     if (Get-Command gsudo -ErrorAction SilentlyContinue) {
         Write-Host "Requesting Administrator privileges via gsudo..." -ForegroundColor Yellow
-        # Relaunches this script as admin and exits the current one
-        gsudo "$($PSCommandPath)" -WslDistro $WslDistro # Passes the parameter to the new execution
+        gsudo "$PSCommandPath" -WslDistro $WslDistro
         exit
     } else {
-        # Fallback to manual instruction if gsudo is not available (initial run)
         Write-Host "ERROR: This script must be run as Administrator." -ForegroundColor Red
         Write-Host "Please right-click the script and 'Run as Administrator'." -ForegroundColor Red
         Read-Host "Press ENTER to exit..."
@@ -126,14 +150,12 @@ Write-Host "Administrator privileges confirmed." -ForegroundColor Green
 Write-Host ""
 Write-Host "Checking WSL 2 installation..." -ForegroundColor Yellow
 try {
-    # Uses the $WslDistro parameter to check status
     wsl -d $WslDistro --status | Out-Null
     Write-Host "WSL 2 is already installed. Distribution: $WslDistro" -ForegroundColor Green
 } catch {
     Write-Host "WSL 2 or distribution '$WslDistro' not found. Starting installation..." -ForegroundColor Yellow
     Write-Host "This may take a few minutes..."
     
-    # Installs WSL or the default distribution
     wsl --install -d $WslDistro
     
     Write-Host ""
@@ -142,8 +164,7 @@ try {
     Write-Host "============================================================"
     Write-Host "WSL 2 has been installed."
     Write-Host "PLEASE RESTART YOUR COMPUTER NOW."
-    Write-Host "After rebooting, run this 'setup.ps1' script again."
-    Write-Host "The installation will continue from where it left off."
+    Write-Host "After rebooting, run this 'setup_windows.ps1' script again."
     Write-Host "============================================================"
     Read-Host "Press ENTER to close and restart your PC..."
     exit
@@ -160,7 +181,6 @@ if ($null -eq $chocoPath) {
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         Write-Host "Chocolatey installed successfully!" -ForegroundColor Green
-        
         $env:Path = "$($env:Path);$($env:ALLUSERSPROFILE)\chocolatey\bin"
     } catch {
         Write-Host "ERROR: Failed to install Chocolatey." -ForegroundColor Red
@@ -174,86 +194,93 @@ if ($null -eq $chocoPath) {
 
 # --- 4. Enabling Chocolatey Auto-Confirmation ---
 Write-Host ""
-Write-Host "Enabling Chocolatey's automatic script confirmation (100% automated mode)..." -ForegroundColor Yellow
+Write-Host "Enabling Chocolatey's automatic script confirmation..." -ForegroundColor Yellow
 try {
-    choco feature enable -n=allowGlobalConfirmation
+    choco feature enable -n=allowGlobalConfirmation | Out-Null
     Write-Host "Feature 'allowGlobalConfirmation' enabled." -ForegroundColor Green
 } catch {
-    Write-Host "ERROR: Failed to enable 'allowGlobalConfirmation'. Script may prompt for confirmation." -ForegroundColor Red
+    Write-Host "WARNING: Failed to enable 'allowGlobalConfirmation'." -ForegroundColor Yellow
 }
 
-# --- 5. BEGINNING WINDOWS TOOL UPGRADES (Batch Loop) ---
+# --- 5. BEGINNING WINDOWS TOOL UPGRADES ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host "  STARTING INSTALLATION/UPGRADE OF WINDOWS TOOLS" -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
-$env:ChocolateyInstallArguments = "--yes" # Define for choco
-$WingetArguments = "--accept-package-agreements --accept-source-agreements -h" # Define for winget
 
-# 5.1: INSTALLATION OF GENERAL PACKAGES (CHOCOLATEY AND WINGET)
-foreach ($Manager in $PackageDefinitions.Keys) {
-    Write-Host ""
-    Write-Host ">>> Starting installations via $Manager..." -ForegroundColor Yellow
+# 5.1: CHOCOLATEY INSTALLATIONS (ONE BY ONE FOR PROPER ERROR HANDLING)
+Write-Host ">>> Starting Chocolatey installations..." -ForegroundColor Yellow
+
+foreach ($category in $PackageDefinitions["choco"].Keys) {
+    $packages = $PackageDefinitions["choco"][$category]
+    if ($packages.Count -eq 0) { continue }
     
-    foreach ($category in $PackageDefinitions[$Manager].Keys) {
-        $packages = $PackageDefinitions[$Manager][$category]
-        if ($packages.Count -eq 0) { continue }
+    Write-Host ""
+    Write-Host "[+] Category: $category" -ForegroundColor Cyan
+    
+    foreach ($pkg in $packages) {
+        Install-ChocoPackage -PackageName $pkg
+    }
+}
+
+# 5.2: WINGET INSTALLATIONS
+Write-Host ""
+Write-Host ">>> Starting Winget installations..." -ForegroundColor Yellow
+$WingetArguments = "--accept-package-agreements --accept-source-agreements -h"
+
+foreach ($category in $PackageDefinitions["winget"].Keys) {
+    $packages = $PackageDefinitions["winget"][$category]
+    if ($packages.Count -eq 0) { continue }
+    
+    Write-Host ""
+    Write-Host "[+] Category: $category" -ForegroundColor Cyan
+    
+    foreach ($pkg in $packages) {
+        Write-Host "  -> Installing $($pkg.Name) ($($pkg.ID))..." -ForegroundColor Cyan
         
-        Write-Host "[+] Upgrading $category..." -ForegroundColor Cyan
+        $installResult = Start-Process -FilePath winget -ArgumentList "install $($pkg.ID) $WingetArguments" -Wait -NoNewWindow -PassThru -ErrorAction SilentlyContinue
         
-        try {
-            if ($Manager -eq "choco") {
-                $packageNames = $packages -join " "
-                choco upgrade $packageNames -y -r --noprogress
-            } elseif ($Manager -eq "winget") {
-                foreach ($pkg in $packages) {
-                    Write-Host "  -> Installing $($pkg.Name) ($($pkg.ID))..."
-                    
-                    # ENHANCEMENT: Check Winget ExitCode for better error handling
-                    $installResult = Start-Process -FilePath winget -ArgumentList "install $($pkg.ID) $WingetArguments" -Wait -NoNewWindow -PassThru -ErrorAction Stop
-                    
-                    if ($installResult.ExitCode -ne 0) {
-                        # Code 0x803d0006 is common when the package is already installed or in use.
-                        if ($installResult.ExitCode -eq 0x803d0006) {
-                            Write-Host "  -> WARNING: $($pkg.Name) failed (code: $($installResult.ExitCode)). Possibly already installed/in use. Continuing." -ForegroundColor Yellow
-                        } else {
-                             # Throws exception to be caught by 'catch'
-                             throw "Winget installation failed for $($pkg.Name) with ExitCode: $($installResult.ExitCode)"
-                        }
-                    } else {
-                        Write-Host "  -> $($pkg.Name) installed successfully." -ForegroundColor Green
-                    }
-                }
-            }
-        } catch {
-            Write-Host "WARNING: Critical failure in category '$category' via $Manager." -ForegroundColor Red
-            Write-Host "Details: $_.Exception.Message" -ForegroundColor Red
-            # Do not stop the script here, only issue a warning, as it is a large batch.
+        # Winget exit codes:
+        # 0 = Success
+        # -1978335189 (0x8A15000B) = No applicable update found (already up to date)
+        # -1978335212 (0x8A150014) = Package not found
+        
+        if ($null -eq $installResult) {
+            Write-Host "  ✗ Failed to launch Winget for $($pkg.Name)" -ForegroundColor Yellow
+        }
+        elseif ($installResult.ExitCode -eq 0) {
+            Write-Host "  ✓ $($pkg.Name) installed/updated" -ForegroundColor Green
+        }
+        elseif ($installResult.ExitCode -eq -1978335189) {
+            Write-Host "  ✓ $($pkg.Name) (already up to date)" -ForegroundColor Green
+        }
+        elseif ($installResult.ExitCode -eq -1978335212) {
+            Write-Host "  ✗ $($pkg.Name) not found in Winget repository" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "  ✗ $($pkg.Name) (exit code: $($installResult.ExitCode))" -ForegroundColor Yellow
         }
     }
 }
 
-# 5.2: MANUAL / COMPLEX INSTALLATIONS
+# 5.3: VISUAL STUDIO 2022 (SEPARATE INSTALLATION)
 Write-Host ""
 Write-Host "================== LONG TASK WARNING (VS 2022) ==================" -ForegroundColor Yellow
 Write-Host "Starting 'Visual Studio 2022 Community' upgrade/install."
 Write-Host "This is the largest download and can take 30-60 minutes."
-Write-Host "The terminal MAY APPEAR FROZEN. This is normal. Please wait..."
 Write-Host "================================================================="
-Write-Host "[+] Upgrading Visual Studio 2022 Community IDE (for C++)..." -ForegroundColor Cyan
-choco upgrade visualstudio2022community --package-parameters "--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet" -y --noprogress
+Write-Host ""
 
-Write-Host "[+] Upgrading CMake with Path set..." -ForegroundColor Cyan
-choco upgrade cmake.install --install-arguments 'ADD_CMAKE_TO_PATH_System' -y --noprogress
+Install-ChocoPackage -PackageName "visualstudio2022community" -ExtraArgs "--package-parameters `"--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet`""
 
+Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
 Write-Host "================================================="
 Write-Host ""
 
-
-# --- 6. INSTALLING VS CODE EXTENSIONS (Batch Optimized) ---
+# --- 6. INSTALLING VS CODE EXTENSIONS ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host "  INSTALLING VS CODE EXTENSIONS..." -ForegroundColor Green
@@ -261,7 +288,7 @@ Write-Host "============================================================"
 Write-Host ""
 
 if (Get-Command code -ErrorAction SilentlyContinue) {
-    Write-Host "[+] Installing/Updating extensions in one batch..." -ForegroundColor Cyan
+    Write-Host "[+] Installing/Updating extensions..." -ForegroundColor Cyan
     
     $extensions = @(
         "pkief.material-icon-theme",
@@ -285,79 +312,106 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
     )
 
     foreach ($ext in $extensions) {
-        Write-Host "Installing $ext..."
-        code --install-extension $ext --force
+        code --install-extension $ext --force 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  ✓ $ext" -ForegroundColor Green
+        } else {
+            Write-Host "  ✗ $ext" -ForegroundColor Yellow
+        }
     }
 
     Write-Host "VS Code extensions installed/updated." -ForegroundColor Green
 } else {
-    Write-Host "ERROR: 'code.exe' not found in PATH. Skipping VS Code extension install." -ForegroundColor Red
-    Write-Host "Please restart your terminal and run the script again if VS Code was just installed."
+    Write-Host "WARNING: 'code.exe' not found in PATH." -ForegroundColor Yellow
 }
 
+# --- 6.1: CONFIGURING POWERSHELL 7 PROFILE ---
+Write-Host ""
+Write-Host "[+] Configuring PowerShell 7 Profile..." -ForegroundColor Yellow
 
-# --- 6.1: CONFIGURING POWERSHELL 7 PROFILE (Productivity Pack) ---
-# REFACTOR: Run dependency providers setup once before module installs
-Write-Host "[+] Setting up NuGet and PSGallery for module installation..." -ForegroundColor Yellow
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
-Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-
-Write-Host "[+] Installing essential PowerShell Modules (Pester, PSReadLine)..." -ForegroundColor Yellow
-Install-PSModuleSafely -Name "Pester"
-Install-PSModuleSafely -Name "PSReadLine"
-Install-PSModuleSafely -Name "Microsoft.PowerShell.Archive"
-
-Write-Host "[+] Configuring PowerShell 7 Profile (Oh My Posh, Terminal-Icons, PSReadLine)..." -ForegroundColor Yellow
+# Setup NuGet with better error handling
 try {
-    Write-Host "[+] Installing 'Terminal-Icons' module..."
-    Install-PSModuleSafely -Name "Terminal-Icons"
+    Write-Host "  -> Setting up NuGet provider..." -ForegroundColor Cyan
+    
+    # Try to get PackageProvider first
+    $nuget = Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue
+    
+    if (-not $nuget) {
+        # Force TLS 1.2
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        
+        # Install with minimal version
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -ErrorAction Stop | Out-Null
+        Write-Host "  ✓ NuGet provider installed" -ForegroundColor Green
+    } else {
+        Write-Host "  ✓ NuGet provider already available" -ForegroundColor Green
+    }
+    
+    # Set PSGallery as trusted
+    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+    
+} catch {
+    Write-Host "  ✗ NuGet setup failed (not critical): $($_.Exception.Message)" -ForegroundColor Yellow
+}
 
+# Install PowerShell modules
+Write-Host "  -> Installing PowerShell modules..." -ForegroundColor Cyan
+Install-PSModuleSafely -Name "PSReadLine"
+Install-PSModuleSafely -Name "Terminal-Icons"
+Install-PSModuleSafely -Name "Pester"
+
+# Configure PowerShell Profile
+try {
     $ProfileDir = Join-Path $env:USERPROFILE "Documents\PowerShell"
     $ProfilePath = Join-Path $ProfileDir "profile.ps1"
     
     if (-not (Test-Path $ProfileDir)) {
-        Write-Host "Creating PowerShell profile directory: $ProfileDir"
         New-Item -Path $ProfileDir -ItemType Directory -Force | Out-Null
     }
 
     $ProfileContent = @"
 
-# --- Productivity Pack Start ---
-# Makes the terminal beautiful (themes)
-oh-my-posh init pwsh | Invoke-Expression
-
-# Enables icons in the terminal
-Import-Module -Name Terminal-Icons
-
-# Makes TAB completion use an interactive menu (like Linux)
-Set-PSReadLineOption -EditMode Emacs
-
-# Enables "ghost" auto-completion based on history
-Set-PSReadLineOption -PredictionSource History
-
-# Allow local scripts to run
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-# --- Productivity Pack End ---
-"@
-    
-    $FileContent = if (Test-Path $ProfilePath) { Get-Content $ProfilePath -Raw } else { "" }
-
-    $Marker = "# --- Productivity Pack Start ---"
-    
-    if ($FileContent -notlike "*$Marker*") {
-        Write-Host "Adding Productivity Pack to $ProfilePath..."
-        $ProfileContent | Out-File -FilePath $ProfilePath -Encoding UTF8 -Append
-        Write-Host "PowerShell profile configured." -ForegroundColor Green
-    } else {
-        Write-Host "PowerShell profile already contains Productivity Pack. Skipping." -ForegroundColor Green
-    }
-} catch {
-    Write-Host "ERROR: Failed to configure PowerShell profile." -ForegroundColor Red
-    Write-Host $_.Exception.Message
+# --- Productivity Pack ---
+# Oh My Posh theme
+if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
+    oh-my-posh init pwsh --config `$env:POSH_THEMES_PATH\powerlevel10k_rainbow.omp.json | Invoke-Expression
 }
 
+# Terminal Icons
+if (Get-Module -ListAvailable -Name Terminal-Icons) {
+    Import-Module -Name Terminal-Icons
+}
 
-# --- 7. EXECUTING WSL SCRIPT (Automated Section) ---
+# PSReadLine improvements
+if (Get-Module -ListAvailable -Name PSReadLine) {
+    Set-PSReadLineOption -EditMode Emacs
+    Set-PSReadLineOption -PredictionSource History
+    Set-PSReadLineOption -PredictionViewStyle ListView
+}
+
+# Set execution policy
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction SilentlyContinue
+"@
+    
+    $Marker = "# --- Productivity Pack ---"
+    
+    if (Test-Path $ProfilePath) {
+        $FileContent = Get-Content $ProfilePath -Raw
+        if ($FileContent -notlike "*$Marker*") {
+            $ProfileContent | Out-File -FilePath $ProfilePath -Encoding UTF8 -Append
+            Write-Host "  ✓ PowerShell profile configured" -ForegroundColor Green
+        } else {
+            Write-Host "  ✓ PowerShell profile already configured" -ForegroundColor Green
+        }
+    } else {
+        $ProfileContent | Out-File -FilePath $ProfilePath -Encoding UTF8
+        Write-Host "  ✓ PowerShell profile created" -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  ✗ PowerShell profile configuration failed: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+# --- 7. EXECUTING WSL SCRIPT ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host "  STARTING AUTOMATED WSL ($WslDistro) SETUP..." -ForegroundColor Green
@@ -383,40 +437,38 @@ if (-not (Test-Path $wslScriptPath)) {
     Write-Host ""
     Write-Host "================== ATTENTION: SUDO PASSWORD ==================" -ForegroundColor Red
     Write-Host "The script will now run the $WslDistro (WSL) setup."
-    Write-Host "The terminal WILL PAUSE and ask for your 'sudo' password (for Linux)."
     Write-Host "PLEASE TYPE YOUR UBUNTU PASSWORD AND PRESS ENTER."
-    Write-Host "(You will not see characters as you type. This is normal.)"
     Write-Host "============================================================="
     Write-Host ""
-    Write-Host "Starting 'wsl.exe'..." -ForegroundColor Yellow
     
     try {
         wsl.exe -d $WslDistro sudo bash "$fullLinuxPath"
+        Write-Host ""
         Write-Host "=================================================" -ForegroundColor Green
         Write-Host "  WSL ($WslDistro) SETUP COMPLETE!" -ForegroundColor Green
         Write-Host "================================================="
     } catch {
         Write-Host "ERROR: Failed to execute WSL script." -ForegroundColor Red
-        Write-Host "If this failed, check if 'wsl_ubuntu.sh' has the corrected package names." -ForegroundColor Red
+        Write-Host $_.Exception.Message -ForegroundColor Red
     }
 }
 
-# --- 8. RUNNING WINDOWS UPDATE (SMART REBOOT) ---
+# --- 8. RUNNING WINDOWS UPDATE ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host "  CHECKING FOR WINDOWS UPDATES..." -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
 
-Write-Host "[+] Installing/Checking 'PSWindowsUpdate' module..." -ForegroundColor Cyan
+Write-Host "[+] Installing 'PSWindowsUpdate' module..." -ForegroundColor Cyan
 Install-PSModuleSafely -Name "PSWindowsUpdate"
-Import-Module PSWindowsUpdate -Force
 
 try {
-    Write-Host "[+] Searching, downloading, and installing all Windows Updates..." -ForegroundColor Yellow
-    Write-Host "This is the other step that MAY TAKE A VERY LONG TIME. Please wait..."
+    Import-Module PSWindowsUpdate -Force -ErrorAction Stop
+    Write-Host "[+] Searching and installing Windows Updates..." -ForegroundColor Yellow
+    Write-Host "This may take a long time. Please wait..."
     
-    Install-WindowsUpdate -AcceptAll -ErrorAction SilentlyContinue
+    Install-WindowsUpdate -AcceptAll -IgnoreReboot -ErrorAction SilentlyContinue | Out-Null
     
     if (Test-RebootRequired) {
         $Global:RebootIsNeeded = $true
@@ -424,8 +476,8 @@ try {
     
     Write-Host "Windows Update check complete." -ForegroundColor Green
 } catch {
-    Write-Host "ERROR: Failed to run Windows Update." -ForegroundColor Red
-    Write-Host "Please run Windows Update manually."
+    Write-Host "WARNING: Failed to run Windows Update." -ForegroundColor Yellow
+    Write-Host "Please run Windows Update manually." -ForegroundColor Yellow
 }
 
 # --- 9. SYSTEM CLEANUP & OPTIMIZATION ---
@@ -435,21 +487,20 @@ Write-Host "  STARTING SYSTEM CLEANUP & OPTIMIZATION..." -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
 
-Write-Host "[+] Cleaning up Windows temporary files (User, System & Prefetch)..." -ForegroundColor Cyan
+Write-Host "[+] Cleaning up Windows temporary files..." -ForegroundColor Cyan
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemRoot\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host "[+] Cleaning up Chocolatey package cache..." -ForegroundColor Cyan
-choco cache remove --all
+Write-Host "[+] Cleaning up Chocolatey cache..." -ForegroundColor Cyan
+choco cache remove --all 2>&1 | Out-Null
 
-Write-Host "[+] Optimizing main drive (C:)... (TRIM or Defrag)" -ForegroundColor Cyan
-Optimize-Volume -DriveLetter C -ErrorAction SilentlyContinue
+Write-Host "[+] Optimizing drive C:..." -ForegroundColor Cyan
+Optimize-Volume -DriveLetter C -ErrorAction SilentlyContinue | Out-Null
 
 Write-Host "System cleanup complete." -ForegroundColor Green
 
-
-# --- 10. Finalization (SMART REBOOT) ---
+# --- 10. Finalization ---
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "  ENTIRE SETUP COMPLETE (WINDOWS + WSL)!" -ForegroundColor Green
@@ -468,8 +519,8 @@ if ($Global:RebootIsNeeded) {
     Write-Host "*****************************************************" -ForegroundColor Red
 } else {
     Write-Host "All tasks complete." -ForegroundColor Green
-    Write-Host "Please CLOSE AND RE-OPEN your terminal (Windows Terminal) for all"
-    Write-Host "PATH changes and the new Zsh shell to take effect." -ForegroundColor Yellow
+    Write-Host "Please CLOSE AND RE-OPEN your terminal for all"
+    Write-Host "PATH changes to take effect." -ForegroundColor Yellow
 }
 
 Read-Host "Press ENTER to close..."
