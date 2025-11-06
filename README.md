@@ -93,9 +93,11 @@ cd ESSENTIALSPPACK
 **Step 2: Execute the Setup Script**
 ```powershell
 # Run as Administrator (the script will handle elevation via 'gsudo' if available)
+cd Windows
 .\setup_windows.ps1
 
 # Optional: Specify a different WSL distribution
+cd Windows
 .\setup_windows.ps1 -WslDistro Debian
 ```
 
@@ -116,6 +118,7 @@ cd ESSENTIALSPPACK
 
 **Step 2: Make the Script Executable and Run**
 ```bash
+cd Linux
 chmod +x setup_linux.sh
 sudo ./setup_linux.sh
 ```
