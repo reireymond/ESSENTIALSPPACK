@@ -602,7 +602,8 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
         "ms-azuretools.vscode-docker",
         "firefox-devtools.vscode-firefox-debug",
         "dart-code.dart-code",
-        "dart-code.flutter"
+        "dart-code.flutter",
+        "SonarSource.SonarLint-VSCode"
     )
 
     # --- OTIMIZAÇÃO NÍVEL 1: INSTALAÇÃO EM LOTE ---
