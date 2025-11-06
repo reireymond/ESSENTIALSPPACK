@@ -68,7 +68,7 @@
     "hashcat",
     "autopsy",
     "putty.install",
-    "owaspzap",
+    "zap",
     "ilspy",
     "volatility",
     "fiddler",
