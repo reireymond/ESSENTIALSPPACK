@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 3.5 (Final Additions: Security, Diagnostics, Jupyter)
+#  Version 3.6 (Final Additions: Nuclei, Pwncat, Interlace)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #  Features:
@@ -265,17 +265,21 @@ sudo -u $SUDO_USER bash -c "
     pipx install bloodhound-py
     pipx install sublist3r
     pipx install uncompyle6
-    pipx install wafw00f
+    pipx install wafw0f
     pipx install jupyter
+    pipx install pwncat-cs # ADIÇÃO: PwnCat
+    pipx install interlace # ADIÇÃO: Interlace
 "
 
-echo "[+] Installing Go Recon Tools (httpx, subfinder, feroxbuster)..."
+echo "[+] Installing Go Recon Tools (httpx, subfinder, feroxbuster, nuclei)..." # ADIÇÃO: nuclei
 go install github.com/projectdiscovery/httpx/cmd/httpx@latest
 go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 go install github.com/epi052/feroxbuster/cmd/feroxbuster@latest
+go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest # ADIÇÃO: nuclei
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/httpx /usr/local/bin/
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/subfinder /usr/local/bin/
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/feroxbuster /usr/local/bin/
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/nuclei /usr/local/bin/ # ADIÇÃO: nuclei
 
 
 # Install GEF (GDB Enhanced Features)
@@ -410,7 +414,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V3.5 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V3.6 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
