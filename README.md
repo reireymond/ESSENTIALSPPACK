@@ -1,6 +1,6 @@
 # 💻 Essential Developer & Cyber Pack
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)]()
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/reireymond/ESSENTIALSPPACK/refs/heads/main/LICENSE)
 [![Project Status](https://img.shields.io/badge/status-Active%20%7C%20v4.0-brightgreen.svg)]()
 
 This open-source project provides a set of master scripts designed to automatically configure a professional working environment across multiple platforms. It is specifically focused on **Software Development**, **DevOps**, and **Cybersecurity/Bug Bounty**.
