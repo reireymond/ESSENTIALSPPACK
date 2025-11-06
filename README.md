@@ -1,90 +1,78 @@
-# Essential's Programming Pack - Environment Setup Scripts
+# Essential's Programming Pack - Scripts de Configuração de Ambiente
 
-This repository contains a set of scripts to automate the configuration of a comprehensive development, DevOps, and cybersecurity environment on Windows machines, with a focus on WSL 2 (Ubuntu) integration.
+Este projeto de código aberto oferece um conjunto de scripts mestres criados para configurar automaticamente um ambiente de trabalho profissional em diversas plataformas, com foco em **Desenvolvimento de Software**, **DevOps** e **Cibersegurança/Bug Bounty**.
 
-## 🚀 What Does It Do?
+O objetivo é transformar um sistema operacional limpo em uma estação de trabalho completa com todas as linguagens, ferramentas de linha de comando (CLI) e aplicativos essenciais em uma única execução.
 
-This project automatically installs, configures, and updates over 100 essential tools, frameworks, and languages.
+## 🚀 O que este pacote instala?
 
-* **Windows Environment (via Chocolatey & Winget):**
-    * **Editors & IDEs:** VS Code, Visual Studio 2022 Community (w/ C++), Neovim.
-    * **Terminal & QoL:** Windows Terminal, PowerShell 7 (running with **`Set-StrictMode`** for robustness), Oh My Posh, nerd-fonts-cascadiacode, **`gsudo`** (for privilege elevation), zoxide (shortcuts), bat, eza, DevToys, **`delta` (enhanced Git diff viewer)**, **`tokei` (LoC counter)**.
-    * **Networking & Files:** 7-Zip, WinSCP, WinDirStat, Bandizip, Free Download Manager (FDM) (Torrent/Downloads).
-    * **Languages & Runtimes:** Python 3, Node.js (LTS), OpenJDK 17, .NET SDK, **`Bun` (Ultra-fast JavaScript/TypeScript Runtime)**.
-    * **Web Dev:** MariaDB, Nginx (via Choco).
-    * **Build Tools:** Git, Git Credential Manager, CMake, MSYS2, **`Ninja Build` (C/C++ build system)**.
-    * **Virtualization:** Docker Desktop, VirtualBox.
-    * **DevOps & Cloud:** AWS CLI, Azure CLI, Terraform, Kubernetes CLI (kubectl).
-    * **Security (Host):** Nmap, Wireshark, Burp Suite Free, Ghidra, Autopsy, x64dbg, Sysinternals, Hashcat, Proxifier, Volatility3, **`Cheat Engine`**.
-    * **System Maintenance:** Checks for **pending reboot** at startup, runs **Windows Update**, and **cleans all temp/prefetch files** at the end.
-    * **Automated Configuration:** Configures VS Code extensions (including Dart/Flutter) and the PowerShell 7 profile (using `Terminal-Icons`).
+O projeto utiliza o melhor gerenciador de pacotes de cada plataforma (Chocolatey/Winget no Windows, APT/Snap no Linux, e gerenciadores de versão como SDKMAN, Pyenv, NVM no subsistema) para instalar, configurar e manter mais de 100 ferramentas.
 
-* **WSL (Ubuntu) Environment:**
-    * **Core Stack:** C/C++ Compilers, GDB, Valgrind, **`set -e` (robustness)**.
-    * **Runtimes & Languages (Managed by Pyenv, SDKMAN, NVM, Rbenv):**
-        * **JVM:** Java 17, Kotlin, Scala, Maven.
-        * **Mobile/Web:** Node.js, TypeScript, Dart, Elixir (via Erlang).
-        * **Scripting:** Python 3.10 (w/ Pyenv, Poetry), Ruby 3.2 (w/ Rbenv), Go, Rust, PHP, Lua.
-    * **Terminal QoL (Modern):** Zsh/Oh My Zsh, `fd-find` (fast search), `duf` (disk usage), `tmux`, `htop`, custom aliases.
-    * **DevOps TUI:** Lazydocker, LazyGit.
-    * **Pentesting/Cybersecurity (Go/Pipx):**
-        * **Recon:** `httpx`, `subfinder`, `feroxbuster` (fast fuzzing), **`nuclei` (Vulnerability Scanner)**, `wafw00f`, **`interlace` (Workflow Automation)**.
-        * **Exploitation:** `metasploit-framework`, `john`, `seclists`, `evil-winrm`, **`pwncat-cs` (Advanced Netcat)**.
-        * **RE/Forensics:** `radare2` (w/ r2pipe), `binwalk`, `foremost`, GEF, `volatility3`.
-    * **System Diagnostics/Hardening:** mtr, traceroute, auditd, fail2ban.
-    * **Data Science:** Jupyter (via pipx).
+### 💻 1. Ambiente Windows (via PowerShell)
 
----
+O script `setup_windows.ps1` foca na integração perfeita entre o Host Windows e o Linux via WSL 2.
 
-## 📋 Prerequisites
+| Categoria | Ferramentas Chave (Instalação e Upgrade via Choco/Winget) |
+| :--- | :--- |
+| **Desenvolvimento Core** | VS Code, Visual Studio 2022 Community (com Workload C++), Neovim, Python 3, OpenJDK 17, .NET SDK. |
+| **Web & Runtimes** | Node.js (LTS), **Bun (Runtime JS/TS Ultra-rápido)**, MariaDB, Nginx. |
+| **DevOps & Cloud** | Docker Desktop, VirtualBox, Git, Git Credential Manager, AWS CLI, Azure CLI, Terraform, Kubernetes CLI (kubectl), **Helmfile**. |
+| **C/C++ & Build** | CMake, MSYS2, **Ninja Build** (para builds rápidos). |
+| **Cibersegurança & RE** | Nmap, Wireshark, Burp Suite Free, Ghidra, Volatility3, **Cheat Engine**, **IDA Free**, **Rizin-Cutter**, OllyDbg. |
+| **Produtividade & QoL** | Windows Terminal, PowerShell 7 (com `Set-StrictMode`), **gsudo** (para elevação de privilégios), `eza`, `bat`, `zoxide`, **`delta` (diff Git aprimorado)**, `DevToys`. |
 
-1.  Windows 10 or 11.
-2.  **WSL 2 Installed:**
-    * The main script handles this. If it is not installed, the script will install it and **prompt for a mandatory reboot**.
+### 🐧 2. Ambiente Linux (WSL 2 e Nativo)
+
+Os scripts `wsl_ubuntu.sh` e `linux_setup.sh` focam em CLI moderna, gerenciamento de versão e um arsenal completo de Pentest.
+
+| Categoria | Ferramentas Chave (Instalação via APT/Snap/Source) |
+| :--- | :--- |
+| **Linguagens (Gerenciadores)** | **SDKMAN** (Java, Kotlin, Scala, Dart, Elixir), **Pyenv** (Python 3.11), **NVM** (Node.js), **Rbenv** (Ruby). |
+| **Shell & QoL** | Zsh, Oh My Zsh, Powerlevel10k, **Starship (Prompt moderno)**, `tmux`, `bpytop` (monitor de sistema), **LinuxToys**, `neofetch`, **`gum`** (scripts de terminal interativos). |
+| **DevOps & Containers** | Docker, Helm, Terraform, **Trivy (Scanner de Vulnerabilidades)**, **Hadolint** (Linter de Dockerfile), LazyGit, Lazydocker. |
+| **Cibersegurança & Recon** | Metasploit-Framework, John, Seclists, **Nuclei (Scanner de Vulnerabilidades)**, **`sslyze` (Análise SSL/TLS)**, **`pwncat-cs` (Netcat Avançado)**, **`interlace` (Automação de Workflow)**, **Gf (Go Templates)**. |
+| **Manutenção (Nativo)** | **TLP** (Gerenciamento de Energia - para notebooks), **Flatpak**, **Gnome Tweaks**, `vlc`, **Brave Browser**. |
 
 ---
 
-## ⚙️ How to Use
+## 📋 Como Usar
 
-The entire process is automated by a single master script.
+### 1. No Windows (Host & WSL 2)
 
-1.  Clone this repository:
+O script mestre para Windows cuida do Host e chama o script WSL automaticamente.
+
+1.  Clone este repositório.
+2.  Navegue até a pasta: `cd ESSENTIALSPPACK`
+3.  Execute o script **como Administrador**:
+    ```powershell
+    # O script tentará usar 'gsudo' para elevar privilégios, se disponível.
+    .\setup_windows.ps1
+    
+    # Se você precisar especificar uma distribuição WSL diferente de 'Ubuntu':
+    .\setup_windows.ps1 -WslDistro Debian
+    ```
+4.  O script solicitará a reinicialização se o WSL 2 for instalado pela primeira vez.
+5.  Quando solicitado, forneça sua **senha Linux (sudo)** para iniciar a configuração do WSL.
+
+### 2. No Linux (Nativo - Debian/Ubuntu)
+
+Use o script unificado `linux_setup.sh` para sistemas operacionais Linux nativos.
+
+1.  Clone este repositório: `git clone [https://github.com/reireymond/ESSENTIALSPPACK](https://github.com/reireymond/ESSENTIALSPPACK)`
+2.  Navegue até a pasta: `cd ESSENTIALSPPACK`
+3.  Execute o script **como Administrador**:
     ```bash
-    git clone [https://github.com/reireymond/ESSENTIALSPPACK](https://github.com/reireymond/ESSENTIALSPPACK)
+    chmod +x linux_setup.sh
+    ./linux_setup.sh
     ```
-2.  Navigate into the folder:
-    ```powershell
-    cd ESSENTIALSPPACK
-    ```
-3.  Run the master script **as Administrator**:
-    * Right-click `setup_windows.ps1` and choose "Run with PowerShell".
-    * *OR*, in a terminal (with or without Admin privileges, if **`gsudo`** is installed), run: `.\setup_windows.ps1`
 
 ---
 
-**What will happen:**
+## 🔧 Manutenção (Atualização de Software)
 
-1.  The script will check for any **pending reboot** or if **WSL 2** is installed. If necessary, it will install it and **prompt for a reboot**. After rebooting, just run `setup_windows.ps1` again.
-2.  It will perform the administrator privilege check: it will try to use **`gsudo`** to elevate automatically if run in normal mode. If `gsudo` is not available, it will instruct you to run as administrator manually.
-3.  It will install/verify **Chocolatey** and **Winget** with performance optimizations.
-4.  It will install/upgrade **all Windows tools** and **VS Code extensions**.
-5.  It will automatically call the **`wsl_ubuntu.sh`** script. You will only need to type your **Linux (sudo) password** when prompted. The WSL script runs the **APT installation in one batch** for maximum speed.
-6.  It will run **Windows Update** to install all pending security patches.
-7.  It will **clean up** temp files and **optimize** your drive.
-8.  **Close and reopen** your terminal at the very end.
+O projeto inclui scripts dedicados para manter o ambiente atualizado.
 
-Done! Your full environment is now configured.
-
----
-
-## 🔧 Maintenance (Updating Software)
-
-The main `setup.ps1` script will update all the software listed in the script *whenever you run it*.
-
-However, this repository also includes a separate, lightweight script just for daily or weekly maintenance. This script will update **all** packages on your system from **both Winget and Chocolatey**, and perform system cleanup.
-
-1.  Navigate into the repository folder.
-2.  Run the update script **as Administrator**:
-    ```powershell
-    .\update_windows.ps1
-    ```
+### Windows
+```powershell
+# Atualiza Chocolatey, Winget e limpa o sistema
+.\update_windows.ps1
