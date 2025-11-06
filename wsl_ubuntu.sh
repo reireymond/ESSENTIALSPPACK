@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 4.1 (Bug Fixes: Comments, User context, Error handling)
+#  Version 4.2 (FINAL FIX: All comments corrected, Rizin/Cutter separated)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #
@@ -65,8 +65,10 @@ sudo apt-get install -y \
   python3-impacket impacket-scripts dsniff aircrack-ng \
   bettercap reaver \
   binwalk radare2 foremost radare2-r2pipe \
-  sleuthkit volatility3 rizin-cutter \
-  zip unzip software-properties-common
+  sleuthkit volatility3 rizin cutter \
+  zip unzip software-properties-common zsh curl wget git
+
+echo "APT packages installed successfully."
 
 # -----------------------------------------------------------------------------
 #  SECTION 2: RUNTIMES & VERSION MANAGERS
@@ -470,7 +472,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V4.1 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V4.2 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
