@@ -12,12 +12,12 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 3.5 (Adicionado fallback com gsudo na checagem de Admin)
+    Version: 3.6 (Adicionado StrictMode, Checagem Inicial de Reboot, Novas Ferramentas, gsudo fallback)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
 
-$ErrorActionPreference = "Stop" # Stop on errors for robustness
+Set-StrictMode -Version Latest # MELHORIA: Força verificação rigorosa de erros
 
 # --- 0. Helper Functions & Global Variables ---
 $Global:RebootIsNeeded = $false # We will track if a reboot is needed
@@ -75,26 +75,32 @@ $PackageDefinitions = @{
         )
     }
     "choco" = @{
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "freedownloadmanager", "bandizip")
-        "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk")
-        "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2")
+        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "freedownloadmanager", "bandizip", "delta", "tokei") # ADIÇÃO: delta, tokei
+        "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk", "bun") # ADIÇÃO: bun
+        "Build Tools & Git"     = @("git.install", "gh", "github-desktop", "msys2", "ninja") # ADIÇÃO: ninja
         "Virtualization"        = @("docker-desktop", "virtualbox")
         "Databases & API"       = @("dbeaver", "postman", "mariadb", "nginx")
         "Hardware Diagnostics"  = @("cpu-z", "gpu-z", "hwmonitor", "crystaldiskinfo", "crystaldiskmark", "speccy", "prime95")
         "Communication"         = @("discord")
         "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
         "Runtimes Essenciais"  = @("vcredist-all", "dotnet3.5", "dotnetfx", "jre8", "directx")
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier")
+        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "post", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty", "zap", "ilspy", "cff-explorer-suite", "volatility3", "fiddler-classic", "proxifier", "cheatengine") # ADIÇÃO: cheatengine
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
 # ----------------------------------------------
 
+# --- 0.1. Check for Pending Reboot (Initial Check) ---
+if (Test-RebootRequired) {
+    Write-Host "WARNING: A pending system reboot was detected." -ForegroundColor Red
+    Write-Host "It is highly recommended to reboot the PC before continuing, as installation steps might fail." -ForegroundColor Yellow
+    Read-Host "Press ENTER to continue anyway, or close the window to reboot..."
+}
 
-# --- 1. Administrator Check ---
+# --- 1. Administrator Check (gsudo fallback) ---
 Write-Host "Checking for Administrator privileges..." -ForegroundColor Yellow
 if (-NOT ([System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    # Tenta relançar o script com gsudo se ele já estiver disponível no PATH (uso subsequente ou instalação manual)
+    # Tenta relançar o script com gsudo se ele já estiver disponível no PATH
     if (Get-Command gsudo -ErrorAction SilentlyContinue) {
         Write-Host "Requesting Administrator privileges via gsudo..." -ForegroundColor Yellow
         # Relança este script como admin e sai do atual
