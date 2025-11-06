@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 5.0 (Refactored: JSON config, hybrid install, smart existence checks)
+    Version: 5.1 (Optimized: L1/L2 Batching and Caching)
     Author: Kaua
     LOGIC: Uses hybrid Install-Package function with winget priority and choco fallback.
     IMPROVEMENTS: 
@@ -134,7 +134,7 @@ function Write-InstallSummary {
     # Prepare summary object for JSON
     $summaryObject = @{
         Timestamp = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-        ScriptVersion = "5.0"
+        ScriptVersion = "5.1"
         Succeeded = $Global:InstallSummary.Succeeded
         Failed = $Global:InstallSummary.Failed
         Skipped = $Global:InstallSummary.Skipped
@@ -252,35 +252,32 @@ function Install-Package {
         [Parameter(Mandatory=$true)]
         [string]$PackageName,
         [string]$WingetId = "",
-        [scriptblock]$SpecialHandler = $null
+        [scriptblock]$SpecialHandler = $null,
+        
+        # --- OTIMIZAÇÃO NÍVEL 2 ---
+        [string[]]$InstalledWingetCache = @(),
+        [string[]]$InstalledChocoCache = @()
     )
     
     Write-Host "  -> Installing: $PackageName" -ForegroundColor Cyan
     
     # Check if package is already installed (winget check)
     if ($WingetId) {
-        try {
-            $wingetList = winget list --id $WingetId 2>&1
-            if ($LASTEXITCODE -eq 0 -and $wingetList -match $WingetId) {
-                Write-Host "  ✓ $PackageName (already installed via winget)" -ForegroundColor Green
-                $Global:InstallSummary.Succeeded += $PackageName
-                return $true
-            }
-        } catch {
-            # Continue to installation
+        # --- LÓGICA DE CACHE NÍVEL 2 ---
+        if ($InstalledWingetCache -match $WingetId) {
+            Write-Host "  ✓ $PackageName (already installed via winget)" -ForegroundColor Green
+            $Global:InstallSummary.Succeeded += $PackageName
+            return $true
         }
     }
     
     # Check if package is already installed (choco check)
-    try {
-        $chocoList = choco list --local-only $PackageName --exact 2>&1
-        if ($LASTEXITCODE -eq 0 -and $chocoList -match "1 packages installed") {
-            Write-Host "  ✓ $PackageName (already installed via choco)" -ForegroundColor Green
-            $Global:InstallSummary.Succeeded += $PackageName
-            return $true
-        }
-    } catch {
-        # Continue to installation
+    # --- LÓGICA DE CACHE NÍVEL 2 ---
+    # Usamos -match pois 'choco list' retorna 'PackageName|Version'
+    if ($InstalledChocoCache -match $PackageName) {
+        Write-Host "  ✓ $PackageName (already installed via choco)" -ForegroundColor Green
+        $Global:InstallSummary.Succeeded += $PackageName
+        return $true
     }
     
     # Try winget first if WingetId is provided
@@ -441,13 +438,33 @@ Write-Host "  STARTING INSTALLATION/UPGRADE OF WINDOWS TOOLS" -ForegroundColor G
 Write-Host "============================================================"
 Write-Host ""
 
+# --- OTIMIZAÇÃO NÍVEL 2: CACHE DE PACOTES ---
+Write-Host "Building package cache (this may take a moment)..." -ForegroundColor Yellow
+$installedWinget = @()
+$installedChoco = @()
+try {
+    $installedWinget = winget list 2>&1 | Out-String
+} catch {
+    Write-Host "  WARNING: Failed to build winget cache." -ForegroundColor Yellow
+}
+try {
+    # Usamos -lo (localOnly) para velocidade e --limitoutput para limpeza
+    $installedChoco = choco list -lo --limitoutput 2>&1 | Out-String
+} catch {
+    Write-Host "  WARNING: Failed to build choco cache." -ForegroundColor Yellow
+}
+Write-Host "Package cache built." -ForegroundColor Green
+# --- FIM DA OTIMIZAÇÃO NÍVEL 2 ---
+
+
 # 5.1: INSTALL WINGET PACKAGES (Priority: try winget first, fallback to choco)
 Write-Host ">>> Starting Winget package installations (with Chocolatey fallback)..." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "[+] Installing Winget packages (priority method)" -ForegroundColor Cyan
 
 foreach ($packageId in $PackageDefinitions.winget) {
-    Install-Package -PackageName $packageId -WingetId $packageId
+    # --- CHAMADA MODIFICADA (NÍVEL 2) ---
+    Install-Package -PackageName $packageId -WingetId $packageId -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
 }
 
 # 5.2: INSTALL CHOCOLATEY-ONLY PACKAGES
@@ -491,7 +508,8 @@ foreach ($packageName in $PackageDefinitions.choco) {
             Write-Host "  Attempting to install/upgrade MariaDB anyway..." -ForegroundColor Yellow
         }
         
-        Install-Package -PackageName $packageName -SpecialHandler $mariadbHandler
+        # --- CHAMADA MODIFICADA (NÍVEL 2) ---
+        Install-Package -PackageName $packageName -SpecialHandler $mariadbHandler -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
     }
     # Special handling for Visual Studio 2022 with extra parameters
     elseif ($packageName -eq "visualstudio2022community") {
@@ -502,11 +520,13 @@ foreach ($packageName in $PackageDefinitions.choco) {
         Write-Host "================================================================="
         Write-Host ""
         
-        # For VS2022, we need to use the old function with special parameters
+        # Para o VS2022, usamos a função antiga (Install-PackageWithChoco)
+        # pois ela já não faz verificações e precisa de parâmetros extras.
         Install-PackageWithChoco -PackageName $packageName -ExtraArgs "--package-parameters `"--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet`""
     }
     else {
-        Install-Package -PackageName $packageName
+        # --- CHAMADA MODIFICADA (NÍVEL 2) ---
+        Install-Package -PackageName $packageName -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
     }
 }
 
@@ -524,7 +544,7 @@ Write-Host "============================================================"
 Write-Host ""
 
 if (Get-Command code -ErrorAction SilentlyContinue) {
-    Write-Host "[+] Installing/Updating extensions..." -ForegroundColor Cyan
+    Write-Host "[+] Installing/Updating extensions in one batch..." -ForegroundColor Cyan
     
     $extensions = @(
         "pkief.material-icon-theme",
@@ -547,16 +567,18 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
         "dart-code.flutter"
     )
 
-    foreach ($ext in $extensions) {
-        code --install-extension $ext --force 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "  ✓ $ext" -ForegroundColor Green
-        } else {
-            Write-Host "  ✗ $ext" -ForegroundColor Yellow
-        }
-    }
+    # --- OTIMIZAÇÃO NÍVEL 1: INSTALAÇÃO EM LOTE ---
+    # Junta todas as extensões em um único comando
+    $argumentList = $extensions | ForEach-Object { "--install-extension $_ --force" }
+    code $argumentList 2>&1 | Out-Null
 
-    Write-Host "VS Code extensions installed/updated." -ForegroundColor Green
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  ✓ All extensions installed/updated successfully." -ForegroundColor Green
+    } else {
+        Write-Host "  ✗ One or more extensions failed to install." -ForegroundColor Yellow
+    }
+    # --- FIM DA OTIMIZAÇÃO NÍVEL 1 ---
+
 } else {
     Write-Host "WARNING: 'code.exe' not found in PATH." -ForegroundColor Yellow
 }
@@ -590,11 +612,18 @@ try {
     Write-Host "  ✗ NuGet setup failed (not critical): $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
+# --- OTIMIZAÇÃO NÍVEL 1: INSTALAÇÃO EM LOTE ---
 # Install PowerShell modules
-Write-Host "  -> Installing PowerShell modules..." -ForegroundColor Cyan
-Install-PSModuleSafely -Name "PSReadLine"
-Install-PSModuleSafely -Name "Terminal-Icons"
-Install-PSModuleSafely -Name "Pester"
+Write-Host "  -> Installing PowerShell modules in one batch..." -ForegroundColor Cyan
+try {
+    # Instala todos de uma vez, pulando verificações individuais
+    Install-Module -Name "PSReadLine", "Terminal-Icons", "Pester" -Force -Scope AllUsers -AllowClobber -SkipPublisherCheck -ErrorAction Stop
+    Write-Host "  ✓ PSReadLine, Terminal-Icons, Pester installed/updated." -ForegroundColor Green
+} catch {
+    Write-Host "  WARNING: Failed to install PowerShell modules - $($_.Exception.Message)" -ForegroundColor Yellow
+}
+# --- FIM DA OTIMIZAÇÃO NÍVEL 1 ---
+
 
 # Configure PowerShell Profile
 try {
