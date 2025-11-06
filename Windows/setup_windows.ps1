@@ -69,7 +69,7 @@ function Install-PSModuleSafely {
     if (-not (Get-Module -ListAvailable -Name $Name)) {
         Write-Host "Installing PowerShell module: $Name..." -ForegroundColor Yellow
         try {
-            Install-Module -Name $Name -Force -Scope CurrentUser -AllowClobber -SkipPublisherCheck -ErrorAction Stop
+            Install-Module -Name $Name -Force -Scope AllUsers -AllowClobber -SkipPublisherCheck -ErrorAction Stop
         } catch {
             Write-Host "  WARNING: Failed to install $Name - $($_.Exception.Message)" -ForegroundColor Yellow
         }
