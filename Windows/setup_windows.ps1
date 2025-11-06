@@ -6,13 +6,12 @@
     2. Installs WSL 2 (if not installed) and prompts for a required reboot.
     3. Installs Chocolatey (if not installed).
     4. Enables Chocolatey's auto-confirmation for scripts.
-    5. Installs/Upgrades ALL Windows tools via Winget (priority) and Chocolatey (fallback).
-    6. Installs essential VS Code Extensions.
-    7. Automatically executes the 'wsl_ubuntu.sh' script.
-    8. Installs all pending Windows Updates.
-    9. Cleans up all temp files and optimizes the system.
+    5. Installs/Upgrades ALL Windows tools (Seções 5/6) and Windows Updates (Seção 8) in parallel.
+    6. Installs essential VS Code Extensions (in batch).
+    7. Automatically executes the 'wsl_ubuntu.sh' script (sequentially, for sudo).
+    8. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 5.1 (Optimized: L1/L2 Batching and Caching)
+    Version: 5.2 (Optimized: L1/L2 Cache + L3-Hybrid Parallelism)
     Author: Kaua
     LOGIC: Uses hybrid Install-Package function with winget priority and choco fallback.
     IMPROVEMENTS: 
@@ -134,7 +133,7 @@ function Write-InstallSummary {
     # Prepare summary object for JSON
     $summaryObject = @{
         Timestamp = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-        ScriptVersion = "5.1"
+        ScriptVersion = "5.2"
         Succeeded = $Global:InstallSummary.Succeeded
         Failed = $Global:InstallSummary.Failed
         Skipped = $Global:InstallSummary.Skipped
@@ -431,10 +430,48 @@ try {
     Write-Host "WARNING: Failed to enable 'allowGlobalConfirmation'." -ForegroundColor Yellow
 }
 
-# --- 5. BEGINNING WINDOWS TOOL UPGRADES ---
+
+# --- OTIMIZAÇÃO NÍVEL 3 (HÍBRIDO): INICIAR WINDOWS UPDATE EM BACKGROUND ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
-Write-Host "  STARTING INSTALLATION/UPGRADE OF WINDOWS TOOLS" -ForegroundColor Green
+Write-Host "  STARTING PARALLEL JOB (Windows Update)..." -ForegroundColor Green
+Write-Host "============================================================"
+Write-Host ""
+
+Write-Host "[+] Installing 'PSWindowsUpdate' module (required for job)..." -ForegroundColor Cyan
+Install-PSModuleSafely -Name "PSWindowsUpdate"
+
+Write-Host "[+] Starting Job: Windows Update (running in background)..." -ForegroundColor Cyan
+$JobWinUpdate = Start-Job -Name "WinUpdate" -ScriptBlock {
+    # É preciso importar o módulo DENTRO do job
+    Import-Module PSWindowsUpdate -Force -ErrorAction SilentlyContinue
+    
+    if (-not (Get-Command Install-WindowsUpdate -ErrorAction SilentlyContinue)) {
+        Write-Host "JOB (WU) ERROR: Módulo PSWindowsUpdate não pôde ser importado no job." -ForegroundColor Red
+        return $false
+    }
+    
+    Write-Host "JOB (WU): Procurando e instalando updates..."
+    try {
+        Install-WindowsUpdate -AcceptAll -IgnoreReboot -ErrorAction SilentlyContinue | Out-Null
+        Write-Host "JOB (WU): Verificação de updates completa."
+        # Verifica se um reboot é necessário e armazena o resultado
+        if (Get-Command Test-PendingReboot -ErrorAction SilentlyContinue) {
+            if (Test-PendingReboot -ErrorAction SilentlyContinue) { return $true }
+        }
+    } catch {
+        Write-Host "JOB (WU) ERROR: Falha ao rodar Windows Update." -ForegroundColor Red
+    }
+    return $false # Retorna $false se nenhum reboot for necessário
+}
+# --- FIM DA OTIMIZAÇÃO NÍVEL 3 ---
+
+
+# --- 5. BEGINNING WINDOWS TOOL UPGRADES (THREAD PRINCIPAL) ---
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Green
+Write-Host "  STARTING INSTALLATION/UPGRADE OF WINDOWS TOOLS (Main Thread)"
+Write-Host "  (Windows Update está a correr em paralelo...)"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -676,10 +713,10 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -Err
     Write-Host "  ✗ PowerShell profile configuration failed: $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
-# --- 7. EXECUTING WSL SCRIPT ---
+# --- 7. EXECUTING WSL SCRIPT (SEQUENCIALMENTE) ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
-Write-Host "  STARTING AUTOMATED WSL ($WslDistro) SETUP..." -ForegroundColor Green
+Write-Host "  STARTING AUTOMATED WSL ($WslDistro) SETUP... (Sequential)" -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
 
@@ -707,6 +744,7 @@ if (-not (Test-Path $wslScriptPath)) {
     Write-Host ""
     
     try {
+        # Esta etapa é interativa, por isso NÃO pode estar num job
         wsl.exe -d $WslDistro sudo bash "$fullLinuxPath"
         Write-Host ""
         Write-Host "=================================================" -ForegroundColor Green
@@ -718,32 +756,32 @@ if (-not (Test-Path $wslScriptPath)) {
     }
 }
 
-# --- 8. RUNNING WINDOWS UPDATE ---
+# --- 8. SINCRONIZAÇÃO DO WINDOWS UPDATE (OTIMIZAÇÃO NÍVEL 3) ---
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
-Write-Host "  CHECKING FOR WINDOWS UPDATES..." -ForegroundColor Green
+Write-Host "  SYNCHRONIZING BACKGROUND JOBS (Windows Update)..." -ForegroundColor Green
 Write-Host "============================================================"
 Write-Host ""
 
-Write-Host "[+] Installing 'PSWindowsUpdate' module..." -ForegroundColor Cyan
-Install-PSModuleSafely -Name "PSWindowsUpdate"
+Write-Host "Aguardando a conclusão do Windows Update (se ainda estiver a correr)..." -ForegroundColor Yellow
+# O 'Wait-Job' pausa o script ATÉ o job terminar
+$WinUpdateJobResult = Wait-Job -Name "WinUpdate"
+$RebootNeededByUpdate = $WinUpdateJobResult | Receive-Job
 
-try {
-    Import-Module PSWindowsUpdate -Force -ErrorAction Stop
-    Write-Host "[+] Searching and installing Windows Updates..." -ForegroundColor Yellow
-    Write-Host "This may take a long time. Please wait..."
-    
-    Install-WindowsUpdate -AcceptAll -IgnoreReboot -ErrorAction SilentlyContinue | Out-Null
-    
-    if (Test-RebootRequired) {
-        $Global:RebootIsNeeded = $true
-    }
-    
-    Write-Host "Windows Update check complete." -ForegroundColor Green
-} catch {
-    Write-Host "WARNING: Failed to run Windows Update." -ForegroundColor Yellow
-    Write-Host "Please run Windows Update manually." -ForegroundColor Yellow
+# Exibe o log do job
+Write-Host "[+] Log do Windows Update Job:" -ForegroundColor Cyan
+Write-Host $RebootNeededByUpdate
+Write-Host "Sincronização do Windows Update concluída." -ForegroundColor Green
+
+if ($RebootNeededByUpdate -eq $true) {
+    $Global:RebootIsNeeded = $true
+    Write-Host "  -> O Windows Update marcou que um reboot é necessário." -ForegroundColor Yellow
 }
+
+# Limpa o job
+Remove-Job -Name "WinUpdate" -ErrorAction SilentlyContinue
+# --- FIM DA SINCRONIZAÇÃO (NÍVEL 3) ---
+
 
 # --- 9. SYSTEM CLEANUP & OPTIMIZATION ---
 Write-Host ""
@@ -776,6 +814,8 @@ Write-Host "================================================="
 Write-Host ""
 
 if (Test-RebootRequired) {
+    # Esta verificação garante que, mesmo que o WU não tenha reportado,
+    # o sistema sabe se precisa de um reboot.
     $Global:RebootIsNeeded = $true
 }
 
