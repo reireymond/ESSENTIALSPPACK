@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - LINUX UPDATE Script
-#  Version 1.2 - Updates Snap, APT, Go, Pipx, Flatpak, and Starship.
+#  Version 1.3 - Updates Snap, APT, Go, Pipx, Flatpak, Starship, and Conda.
 #
 # =============================================================================
 
@@ -17,9 +17,9 @@ echo "=========================================="
 USER_HOME="/home/$(whoami)"
 # Tries to load .zshrc if the user is using zsh
 if [ -f "$USER_HOME/.zshrc" ]; then
-    source "$USER_HOME/.zshrc"
+    source "$USER_HOME/.zshrc" || true
 elif [ -f "$USER_HOME/.bashrc" ]; then
-    source "$USER_HOME/.bashrc"
+    source "$USER_HOME/.bashrc" || true
 fi
 
 
@@ -73,6 +73,12 @@ if command -v pyenv &> /dev/null; then
     pyenv update
 fi
 
+# Conda/Miniconda
+if [ -f "$USER_HOME/miniconda3/bin/conda" ]; then
+    echo "  -> Updating Conda/Miniconda..."
+    "$USER_HOME/miniconda3/bin/conda" update --all --yes || true
+fi
+
 # Rbenv
 if command -v rbenv &> /dev/null; then
     echo "  -> Updating Rbenv..."
@@ -90,7 +96,7 @@ fi
 echo ""
 echo ">>> 4. Updating Go and Python CLI Tools..."
 
-# Go Tools (Lazygit, Lazydocker, Nuclei, Gf, Helmfile, Trivy, Gum, etc.)
+# Go Tools (Lazygit, Lazydocker, Nuclei, Gf, Helmfile, Trivy, Gum, Witness, etc.)
 if command -v go &> /dev/null; then
     echo "  -> Updating Go Tools..."
     # Updates all Go packages (usually installed in $HOME/go/bin)
