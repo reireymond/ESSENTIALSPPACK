@@ -8,7 +8,8 @@
     "Microsoft.PowerToys",
     "Obsidian.Obsidian",
     "Git.Git",
-    "RARLab.WinRAR"
+    "RARLab.WinRAR",
+    "AnyDesk.AnyDesk"
   ],
   "choco": [
     "neovim",
