@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 3.8 (Refactoring: WSL Distro Param, Winget Error Check. Language: English)
+    Version: 4.0 (Refactoring: Fully English, Optimized PS Module Install)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
