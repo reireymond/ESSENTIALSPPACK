@@ -542,14 +542,13 @@ foreach ($packageName in $PackageDefinitions.choco) {
             foreach ($product in $existingMySQL) {
                 Write-Host "    - $($product.Name) (v$($product.Version))" -ForegroundColor Yellow
             }
-            
-            # --- INÍCIO DA CORREÇÃO ---
+
             Write-Host "  ⊘ SKIPPING MariaDB installation to avoid conflicts and delays." -ForegroundColor Yellow
             $Global:InstallSummary.Skipped += "mariadb (conflict with existing MySQL detected)"
-            # --- FIM DA CORREÇÃO ---
+
         }
         else {
-            # --- SÓ INSTALA SE NÃO HOUVER CONFLITO ---
+        
             Install-Package -PackageName $packageName -SpecialHandler $mariadbHandler -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
         }
     }
@@ -562,12 +561,9 @@ foreach ($packageName in $PackageDefinitions.choco) {
         Write-Host "================================================================="
         Write-Host ""
         
-        # Para o VS2022, usamos a função antiga (Install-PackageWithChoco)
-        # pois ela já não faz verificações e precisa de parâmetros extras.
         Install-PackageWithChoco -PackageName $packageName -ExtraArgs "--package-parameters `"--add Microsoft.VisualStudio.Workload.NativeDesktop --quiet`""
     }
     else {
-        # --- CHAMADA MODIFICADA (NÍVEL 2) ---
         Install-Package -PackageName $packageName -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
     }
 }
