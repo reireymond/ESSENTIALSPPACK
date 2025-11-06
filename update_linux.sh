@@ -2,31 +2,20 @@
 # =============================================================================
 #
 #  Essential's Pack - LINUX UPDATE Script
-#  Version 1.0 - Atualiza todos os pacotes e runtimes instalados.
+#  Version 1.2 - Updates Snap, APT, Go, Pipx, Flatpak, and Starship.
 #
 # =============================================================================
 
-# Sai imediatamente se um comando falhar
+# Exit immediately if a command fails
 set -e
 
 echo "=========================================="
 echo "  STARTING SYSTEM MAINTENANCE (Linux)"
 echo "=========================================="
 
-# 1. Atualizar Pacotes do Sistema (APT)
-echo ""
-echo ">>> 1. Updating APT Packages..."
-sudo apt-get update
-sudo apt-get upgrade -y
-sudo apt-get dist-upgrade -y
-
-# 2. Atualizar Gerenciadores de Versão e Runtimes
-echo ""
-echo ">>> 2. Updating Runtimes and Version Managers..."
+# 0. Define Variables and Load Shell
 USER_HOME="/home/$(whoami)"
-
-# Carregar Loaders para NVM/SDKMAN/Pyenv/Rbenv
-# Tenta carregar o .zshrc se o usuário estiver usando zsh
+# Tries to load .zshrc if the user is using zsh
 if [ -f "$USER_HOME/.zshrc" ]; then
     source "$USER_HOME/.zshrc"
 elif [ -f "$USER_HOME/.bashrc" ]; then
@@ -34,11 +23,33 @@ elif [ -f "$USER_HOME/.bashrc" ]; then
 fi
 
 
+# 1. Update System Packages (APT)
+echo ""
+echo ">>> 1. Updating APT Packages..."
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get dist-upgrade -y
+
+# 2. Update Snap Packages
+echo ""
+echo ">>> 2. Updating Snap Packages..."
+sudo snap refresh || true
+
+# 2.1. Update Flatpak
+echo ""
+echo ">>> 2.1. Updating Flatpak Packages..."
+flatpak update || true
+
+
+# 3. Update Version Managers and Runtimes
+echo ""
+echo ">>> 3. Updating Runtimes and Version Managers..."
+
 # SDKMAN
 if command -v sdk &> /dev/null; then
     echo "  -> Updating SDKMAN..."
     sdk selfupdate
-    # Atualiza todas as linguagens instaladas via SDKMAN
+    # Attempts to update all languages installed via SDKMAN
     sdk list java | grep installed | awk '{print $NF}' | xargs -I {} sdk upgrade {} || true
     sdk list kotlin | grep installed | awk '{print $NF}' | xargs -I {} sdk upgrade {} || true
     sdk list dart | grep installed | awk '{print $NF}' | xargs -I {} sdk upgrade {} || true
@@ -47,7 +58,13 @@ fi
 # NVM (Node.js)
 if command -v nvm &> /dev/null; then
     echo "  -> Updating Node.js LTS (via NVM)..."
-    nvm install 'lts/*' --reinstall-packages-from="$(nvm current)" # Reinstala a LTS mais recente e migra pacotes
+    # Reinstall the latest LTS and migrate packages.
+    LTS_CURRENT=$(nvm current)
+    if [ "$LTS_CURRENT" != "none" ]; then
+        nvm install 'lts/*' --reinstall-packages-from="$LTS_CURRENT"
+    else
+        echo "  -> No LTS version installed for automatic update."
+    fi
 fi
 
 # Pyenv
@@ -69,21 +86,22 @@ if [ -d "$USER_HOME/.oh-my-zsh" ]; then
 fi
 
 
-# 3. Atualizar Ferramentas Globais (Go, Pipx)
+# 4. Update Global Tools (Go, Pipx)
 echo ""
-echo ">>> 3. Updating Go and Python CLI Tools..."
+echo ">>> 4. Updating Go and Python CLI Tools..."
 
-# Go Tools (Lazygit, Lazydocker, Nuclei, Gf, Helmfile, etc.)
-# Usa 'go install' com -u para atualizar, iterando sobre a pasta bin
-if [ -d "$USER_HOME/go/bin" ]; then
+# Go Tools (Lazygit, Lazydocker, Nuclei, Gf, Helmfile, Trivy, Gum, etc.)
+if command -v go &> /dev/null; then
     echo "  -> Updating Go Tools..."
-    find "$USER_HOME/go/bin" -type f -exec bash -c '
-        path=$(command -v $(basename {}))
-        if [[ $path == "$HOME/go/bin/"* ]]; then
-            echo "    -> Updating $(basename {})..."
-            go install -u $(basename {})@latest || true # Tenta atualizar
-        fi
-    ' \;
+    # Updates all Go packages (usually installed in $HOME/go/bin)
+    go get -u all || true
+    go clean -cache
+fi
+
+# Starship
+if command -v starship &> /dev/null; then
+    echo "  -> Updating Starship Prompt..."
+    starship self-update || true
 fi
 
 # Python Tools (Pipx)
@@ -93,10 +111,10 @@ if command -v pipx &> /dev/null; then
 fi
 
 
-# 4. Limpeza Final
+# 5. Final Cleanup
 echo ""
 echo "=========================================="
-echo "  Cleaning up System and Caches"
+echo "  Cleaning up APT cache and unused packages"
 echo "=========================================="
 sudo apt-get autoremove -y
 sudo apt-get clean
