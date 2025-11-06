@@ -35,7 +35,7 @@
     "Python.Python.3",
     "OpenJS.NodeJS.LTS",
     "Microsoft.DotNet.SDK.8",
-    "Oven.Bun",
+    "Oven-sh.Bun",
     "GitHub.cli",
     "GitHub.GitHubDesktop",
     "MSYS2.MSYS2",
