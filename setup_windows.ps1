@@ -114,7 +114,11 @@ $PackageDefinitions = @{
     }
     "choco" = @{
         # Fixed: Replaced freedownloadmanager -> motrix, removed tokei (no alternative)
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "motrix", "bandizip", "delta")
+        "Editors & Utilities" = @(
+            "neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", 
+            "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", 
+            "motrix", "bandizip", "delta"
+        )
         "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk", "bun")
         "Build Tools & Git"     = @("gh", "github-desktop", "msys2", "ninja", "cmake.install")
         "Virtualization"        = @("docker-desktop", "virtualbox")
@@ -124,7 +128,11 @@ $PackageDefinitions = @{
         "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
         "Runtimes Essentials"  = @("vcredist-all", "dotnetfx", "directx")
         # Fixed: Replaced zap -> owaspzap
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty.install", "owaspzap", "ilspy", "volatility", "fiddler", "proxifier", "cheatengine")
+        "Cybersecurity & Pentest" = @(
+            "nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", 
+            "sysinternals", "hashcat", "autopsy", "putty.install", "owaspzap", "ilspy", 
+            "volatility", "fiddler", "proxifier", "cheatengine"
+        )
         # Fixed: Removed hiew (obsolete, no alternative)
         "Reverse Engineering Pack" = @("ida-free", "rizin", "cutter", "ollydbg", "hxd")
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")

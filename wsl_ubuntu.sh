@@ -204,7 +204,13 @@ fi
 # Install Amass via Snap
 echo "[+] Installing Amass (via Snap)..."
 if ! command -v amass &> /dev/null; then
-    sudo snap install amass || log_failure "amass" "Snap install failed"
+    # Check if snapd is available and running
+    if ! command -v snap &> /dev/null; then
+        echo "WARNING: snapd is not installed. Skipping Amass installation."
+        log_failure "amass" "snapd not available"
+    else
+        sudo snap install amass || log_failure "amass" "Snap install failed"
+    fi
 else
     echo "Amass already installed."
 fi
@@ -213,12 +219,20 @@ fi
 echo "[+] Installing Python pentesting tools (sslyze, volatility3, impacket, enum4linux-ng)..."
 sudo -u "$CURRENT_USER" bash -c '
     export PATH="$HOME/.local/bin:$PATH"
-    python3 -m pip install --user sslyze || echo "Failed to install sslyze"
-    python3 -m pip install --user volatility3 || echo "Failed to install volatility3"
-    python3 -m pip install --user impacket || echo "Failed to install impacket"
-    python3 -m pip install --user enum4linux-ng || echo "Failed to install enum4linux-ng"
-    python3 -m pip install --user r2pipe || echo "Failed to install r2pipe (radare2 python bindings)"
-'
+    python3 -m pip install --user sslyze 2>/dev/null || { echo "Failed to install sslyze"; exit 1; }
+    python3 -m pip install --user volatility3 2>/dev/null || { echo "Failed to install volatility3"; exit 2; }
+    python3 -m pip install --user impacket 2>/dev/null || { echo "Failed to install impacket"; exit 3; }
+    python3 -m pip install --user enum4linux-ng 2>/dev/null || { echo "Failed to install enum4linux-ng"; exit 4; }
+    python3 -m pip install --user r2pipe 2>/dev/null || { echo "Failed to install r2pipe (radare2 python bindings)"; exit 5; }
+' || {
+    case $? in
+        1) log_failure "sslyze" "pip install failed" ;;
+        2) log_failure "volatility3" "pip install failed" ;;
+        3) log_failure "impacket" "pip install failed" ;;
+        4) log_failure "enum4linux-ng" "pip install failed" ;;
+        5) log_failure "r2pipe" "pip install failed" ;;
+    esac
+}
 
 echo "Additional tools installation complete."
 
