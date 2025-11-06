@@ -2,14 +2,14 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 3.6 (Final Additions: Nuclei, Pwncat, Interlace)
+#  Version 3.7 (Refactoring: Python 3.11, RE Pack Additions, DevOps Tools)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #  Features:
 #  - QoL: Zsh + P10k, eza, bat, fzf, fd, duf.
 #  - Runtimes: SDKMAN (Java/Kotlin/Scala/Dart/Elixir), NVM (Node), Pyenv, etc.
-#  - DevOps: Docker, Kubectl, Helm, Terraform, AWS, Azure, Lazydocker.
-#  - Pentest: Kali-Linux toolset + Security Hardening (fail2ban, auditd).
+#  - DevOps: Docker, Kubectl, Helm, Terraform, AWS, Azure, Lazydocker, Helmfile, Hadolint.
+#  - Pentest: Kali-Linux toolset + Security Hardening (fail2ban, auditd), Nuclei, Pwncat, Gf.
 #
 # =============================================================================
 
@@ -39,7 +39,8 @@ sudo apt-get install -y \
   # Core Build Tools & Debugging (C/C++)
   build-essential gdb valgrind binutils \
   # Shell & Python Dev Deps
-  shellcheck python3-dev \
+  shellcheck \
+  python3-dev python3-pip python3-setuptools \
   libssl-dev libffi-dev libbz2-dev libreadline-dev libsqlite3-dev liblzma-dev \
   autoconf bison patch libyaml-dev libtool \
   # Runtimes via APT
@@ -52,6 +53,8 @@ sudo apt-get install -y \
   neovim fd-find duf \
   # MELHORIA: Diagnóstico de Rede e Segurança
   mtr-tiny traceroute auditd fail2ban \
+  # DevOps & Code Quality
+  hadolint \
   # Kali Pack: Recon & Enumeration
   nmap net-tools dnsutils tcpdump amass \
   smbclient enum4linux-ng nbtscan onesixtyone masscan \
@@ -202,6 +205,10 @@ sudo apt-get update
 sudo snap install kubectl --classic
 sudo apt-get install -y helm terraform
 
+# Instalação de ferramentas Go de DevOps adicionais
+go install github.com/roboll/helmfile@latest # ADIÇÃO: helmfile
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/helmfile /usr/local/bin/
+
 # -----------------------------------------------------------------------------
 #  SECTION 4: SHELL UPGRADE (ZSH + POWERLEVEL10K)
 # -----------------------------------------------------------------------------
@@ -267,20 +274,21 @@ sudo -u $SUDO_USER bash -c "
     pipx install uncompyle6
     pipx install wafw0f
     pipx install jupyter
-    pipx install pwncat-cs # ADIÇÃO: PwnCat
-    pipx install interlace # ADIÇÃO: Interlace
+    pipx install pwncat-cs
+    pipx install interlace
 "
 
-echo "[+] Installing Go Recon Tools (httpx, subfinder, feroxbuster, nuclei)..." # ADIÇÃO: nuclei
+echo "[+] Installing Go Recon Tools (httpx, subfinder, feroxbuster, nuclei, gf)..." # ADIÇÃO: gf
 go install github.com/projectdiscovery/httpx/cmd/httpx@latest
 go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 go install github.com/epi052/feroxbuster/cmd/feroxbuster@latest
-go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest # ADIÇÃO: nuclei
+go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+go install github.com/tomnomnom/gf@latest # ADIÇÃO: gf
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/httpx /usr/local/bin/
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/subfinder /usr/local/bin/
 sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/feroxbuster /usr/local/bin/
-sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/nuclei /usr/local/bin/ # ADIÇÃO: nuclei
-
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/nuclei /usr/local/bin/
+sudo -u $SUDO_USER ln -sf /home/${SUDO_USER}/go/bin/gf /usr/local/bin/ # ADIÇÃO: gf
 
 # Install GEF (GDB Enhanced Features)
 if [ ! -f "/home/${SUDO_USER}/.gdbinit-gef.py" ]; then
@@ -400,8 +408,8 @@ sudo -u $SUDO_USER bash -c "
     sdk install elixir
 "
 
-echo "[+] Installing Python 3.10 (via Pyenv)..."
-sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pyenv install 3.10.13 && pyenv global 3.10.13"
+echo "[+] Installing Python 3.11.8 (via Pyenv)..." # ALTERADO: 3.10.13 para 3.11.8
+sudo -u $SUDO_USER bash -c "eval \"\$(pyenv init -)\" && pyenv install 3.11.8 && pyenv global 3.11.8"
 
 echo "[+] Installing Ruby 3.2.2 (via Rbenv)..."
 sudo -u $SUDO_USER bash -c "eval \"\$(rbenv init -)\" && rbenv install 3.2.2 && rbenv global 3.2.2"
@@ -414,7 +422,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V3.6 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V3.7 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
