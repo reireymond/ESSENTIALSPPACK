@@ -6,20 +6,20 @@
     2. Installs WSL 2 (if not installed) and prompts for a required reboot.
     3. Installs Chocolatey (if not installed).
     4. Enables Chocolatey's auto-confirmation for scripts.
-    5. Installs/Upgrades ALL Windows tools via Chocolatey (centralized batches).
+    5. Installs/Upgrades ALL Windows tools via Winget (priority) and Chocolatey (fallback).
     6. Installs essential VS Code Extensions.
     7. Automatically executes the 'wsl_ubuntu.sh' script.
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 4.3 (Enhanced: Robust error handling, fixed package names, detailed logging)
+    Version: 5.0 (Refactored: JSON config, hybrid install, smart existence checks)
     Author: Kaua
-    LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
+    LOGIC: Uses hybrid Install-Package function with winget priority and choco fallback.
     IMPROVEMENTS: 
-    - Added Install-PackageWithChoco with comprehensive error handling
-    - Fixed broken packages: zap → owaspzap, freedownloadmanager → motrix
-    - Removed unstable packages: hiew, tokei (manual install recommended)
-    - Special MariaDB handling with conflict detection and MSI 1603 troubleshooting
+    - Externalized packages to packages_windows.json for easy maintenance
+    - Hybrid Install-Package function with smart existence checks
+    - Added hxd and cloc packages as requested
+    - Maintains special handling for MariaDB and Visual Studio
     - Detailed logging with JSON summary saved to %LOCALAPPDATA%\ESSENTIALSPPACK\
 #>
 
@@ -134,7 +134,7 @@ function Write-InstallSummary {
     # Prepare summary object for JSON
     $summaryObject = @{
         Timestamp = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-        ScriptVersion = "4.3"
+        ScriptVersion = "5.0"
         Succeeded = $Global:InstallSummary.Succeeded
         Failed = $Global:InstallSummary.Failed
         Skipped = $Global:InstallSummary.Skipped
