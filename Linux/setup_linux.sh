@@ -456,6 +456,7 @@ install_vscode_extensions() {
         "ms-azuretools.vscode-docker"
         "dart-code.dart-code"
         "dart-code.flutter"
+        "SonarSource.SonarLint-VSCode"
     )
     
     for ext in "${extensions[@]}"; do
