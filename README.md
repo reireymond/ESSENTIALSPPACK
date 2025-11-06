@@ -87,17 +87,15 @@ The Windows script is your main entry point and automatically triggers WSL setup
 **Step 1: Clone the Repository**
 ```bash
 git clone https://github.com/reireymond/ESSENTIALSPPACK
-cd ESSENTIALSPPACK
+cd ESSENTIALSPPACK/Windows
 ```
 
 **Step 2: Execute the Setup Script**
 ```powershell
 # Run as Administrator (the script will handle elevation via 'gsudo' if available)
-cd Windows
 .\setup_windows.ps1
 
 # Optional: Specify a different WSL distribution
-cd Windows
 .\setup_windows.ps1 -WslDistro Debian
 ```
 
@@ -113,12 +111,11 @@ For native Linux environments, use the dedicated setup script.
 **Step 1: Clone the Repository**
 ```bash
 git clone https://github.com/reireymond/ESSENTIALSPPACK
-cd ESSENTIALSPPACK
+cd ESSENTIALSPPACK/Linux
 ```
 
 **Step 2: Make the Script Executable and Run**
 ```bash
-cd Linux
 chmod +x setup_linux.sh
 sudo ./setup_linux.sh
 ```
