@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 4.2 (FINAL FIX: All comments corrected, Rizin/Cutter separated)
+#  Version 4.3 (OPTIMIZED: Fixed broken packages, added proper installation methods, error handling)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #
@@ -10,6 +10,16 @@
 
 # Exit immediately if a command fails
 set -e
+
+# Track failed installations for summary
+FAILED_INSTALLATIONS=()
+
+# Function to log failed installations
+log_failure() {
+    local item="$1"
+    local reason="$2"
+    FAILED_INSTALLATIONS+=("$item: $reason")
+}
 
 # Ensures the script is non-interactive
 export DEBIAN_FRONTEND=noninteractive
@@ -43,6 +53,18 @@ sudo apt-get upgrade -y
 echo "=========================================="
 echo "  Installing All Core APT Packages (One Batch for Speed)"
 echo "=========================================="
+# Fixed: Removed packages not available in APT repos:
+# - php-composer (install via official method later)
+# - sslyze (install via pip later)
+# - amass (install via snap later)
+# - enum4linux-ng (install via pip later)
+# - seclists (clone from GitHub later)
+# - exploitdb (install separately via searchsploit)
+# - impacket-scripts (install via pip later)
+# - radare2-r2pipe (install via pip later)
+# - volatility3 (install via pip later)
+# - rizin, cutter (not available in standard repos, removed from batch)
+# Fixed: thc-hydra -> hydra
 sudo apt-get install -y \
   build-essential gdb valgrind binutils \
   shellcheck \
@@ -51,21 +73,20 @@ sudo apt-get install -y \
   autoconf bison patch libyaml-dev libtool \
   golang-go lua5.4 \
   php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath \
-  php-composer \
   tmux htop bpytop bat eza tldr \
   jq fzf ripgrep ncdu \
   neovim fd-find duf \
-  mtr-tiny traceroute auditd fail2ban sslyze \
-  nmap net-tools dnsutils tcpdump amass \
-  smbclient enum4linux-ng nbtscan onesixtyone masscan \
+  mtr-tiny traceroute auditd fail2ban \
+  nmap net-tools dnsutils tcpdump \
+  smbclient nbtscan onesixtyone masscan \
   gobuster dirb nikto whatweb ffuf sqlmap wfuzz \
   dirsearch mitmproxy \
-  john hashid seclists thc-hydra \
-  exploitdb metasploit-framework \
-  python3-impacket impacket-scripts dsniff aircrack-ng \
+  john hashid hydra \
+  metasploit-framework \
+  python3-impacket dsniff aircrack-ng \
   bettercap reaver \
-  binwalk radare2 foremost radare2-r2pipe \
-  sleuthkit volatility3 rizin cutter \
+  binwalk radare2 foremost \
+  sleuthkit \
   zip unzip software-properties-common zsh curl wget git
 
 echo "APT packages installed successfully."
@@ -132,6 +153,74 @@ if ! command -v rbenv &> /dev/null; then
     sudo -u "$CURRENT_USER" git clone https://github.com/rbenv/rbenv.git "$USER_HOME/.rbenv"
     sudo -u "$CURRENT_USER" git clone https://github.com/rbenv/ruby-build.git "$USER_HOME/.rbenv/plugins/ruby-build"
 fi
+
+# -----------------------------------------------------------------------------
+#  SECTION 2.5: MISSING TOOLS INSTALLATION (Not in APT repos)
+# -----------------------------------------------------------------------------
+
+echo "=========================================="
+echo "  Installing Tools Not Available in APT"
+echo "=========================================="
+
+# Install Composer (PHP dependency manager) - Official method
+echo "[+] Installing Composer (PHP)..."
+if ! command -v composer &> /dev/null; then
+    EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+    
+    if [ "$EXPECTED_CHECKSUM" = "$ACTUAL_CHECKSUM" ]; then
+        sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+        rm composer-setup.php
+        echo "Composer installed successfully."
+    else
+        echo "ERROR: Invalid installer checksum for Composer"
+        log_failure "composer" "Invalid installer checksum"
+        rm composer-setup.php
+    fi
+else
+    echo "Composer already installed."
+fi
+
+# Install SecLists (clone from GitHub)
+echo "[+] Installing SecLists..."
+if [ ! -d "/opt/seclists" ]; then
+    sudo git clone --depth 1 https://github.com/danielmiessler/SecLists.git /opt/seclists || log_failure "seclists" "Git clone failed"
+    echo "SecLists cloned to /opt/seclists"
+else
+    echo "SecLists already installed at /opt/seclists"
+fi
+
+# Install Exploit Database (searchsploit)
+echo "[+] Installing Exploit Database (searchsploit)..."
+if ! command -v searchsploit &> /dev/null; then
+    sudo git clone --depth 1 https://github.com/offensive-security/exploitdb.git /opt/exploitdb || log_failure "exploitdb" "Git clone failed"
+    sudo ln -sf /opt/exploitdb/searchsploit /usr/local/bin/searchsploit
+    echo "Exploit Database installed."
+else
+    echo "Exploit Database already installed."
+fi
+
+# Install Amass via Snap
+echo "[+] Installing Amass (via Snap)..."
+if ! command -v amass &> /dev/null; then
+    sudo snap install amass || log_failure "amass" "Snap install failed"
+else
+    echo "Amass already installed."
+fi
+
+# Install Python-based pentesting tools via pip
+echo "[+] Installing Python pentesting tools (sslyze, volatility3, impacket, enum4linux-ng)..."
+sudo -u "$CURRENT_USER" bash -c '
+    export PATH="$HOME/.local/bin:$PATH"
+    python3 -m pip install --user sslyze || echo "Failed to install sslyze"
+    python3 -m pip install --user volatility3 || echo "Failed to install volatility3"
+    python3 -m pip install --user impacket || echo "Failed to install impacket"
+    python3 -m pip install --user enum4linux-ng || echo "Failed to install enum4linux-ng"
+    python3 -m pip install --user r2pipe || echo "Failed to install r2pipe (radare2 python bindings)"
+'
+
+echo "Additional tools installation complete."
 
 # -----------------------------------------------------------------------------
 #  SECTION 3: UTILITIES, DEVOPS & PRODUCTIVITY
@@ -299,7 +388,7 @@ sudo -u "$CURRENT_USER" bash -c '
     pipx install jupyter || true
     pipx install pwncat-cs || true
     pipx install interlace || true
-    pipx install sslyze || true
+    # sslyze, enum4linux-ng, volatility3, and impacket already installed via pip earlier
     pipx install semgrep || true
     pipx install mycli || true
     pipx install pgcli || true
@@ -472,9 +561,26 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V4.2 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V4.3 COMPLETE!"
 echo "=========================================="
 echo ""
+
+# Display failed installations summary
+if [ ${#FAILED_INSTALLATIONS[@]} -gt 0 ]; then
+    echo "================================================="
+    echo "  INSTALLATION FAILURES SUMMARY"
+    echo "================================================="
+    echo "The following items failed to install:"
+    for failure in "${FAILED_INSTALLATIONS[@]}"; do
+        echo "  - $failure"
+    done
+    echo ""
+    echo "NOTE: Some failures may not be critical. Please verify"
+    echo "if the missing tools are essential for your workflow."
+    echo "================================================="
+    echo ""
+fi
+
 echo -e "\033[1;33mIMPORTANT:\033[0m"
 echo "1. Please close and reopen your Ubuntu terminal."
 echo "2. The Powerlevel10k (p10k) wizard will run on first launch."

@@ -12,7 +12,7 @@
     8. Installs all pending Windows Updates.
     9. Cleans up all temp files and optimizes the system.
 .NOTES
-    Version: 4.2 (FINAL: Individual package install, All names corrected, Rizin/Cutter separated)
+    Version: 4.3 (OPTIMIZED: Fixed broken packages - zap->owaspzap, freedownloadmanager->motrix, removed hiew/tokei, added error tracking)
     Author: Kaua
     LOGIC: Uses 'choco upgrade' to install (if missing) or upgrade (if existing).
 #>
@@ -26,6 +26,7 @@ $ErrorActionPreference = "Stop"
 
 # --- 0. Helper Functions & Global Variables ---
 $Global:RebootIsNeeded = $false
+$Global:FailedPackages = @()  # Track failed package installations
 
 function Test-RebootRequired {
     try {
@@ -84,8 +85,12 @@ function Install-ChocoPackage {
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  ✓ $PackageName" -ForegroundColor Green
+        return $true
     } else {
         Write-Host "  ✗ $PackageName (exit code: $LASTEXITCODE)" -ForegroundColor Yellow
+        # Track failed packages for final summary
+        $Global:FailedPackages += @{Package = $PackageName; ExitCode = $LASTEXITCODE}
+        return $false
     }
 }
 
@@ -108,7 +113,8 @@ $PackageDefinitions = @{
         )
     }
     "choco" = @{
-        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "freedownloadmanager", "bandizip", "delta", "tokei")
+        # Fixed: Replaced freedownloadmanager -> motrix, removed tokei (no alternative)
+        "Editors & Utilities" = @("neovim", "7zip", "powershell-core", "gsudo", "bat", "eza", "devtoys", "winmerge", "keepassxc", "windirstat", "winscp", "tor-browser", "zoxide", "motrix", "bandizip", "delta")
         "Languages & Runtimes"  = @("python3", "nodejs-lts", "openjdk17", "dotnet-sdk", "bun")
         "Build Tools & Git"     = @("gh", "github-desktop", "msys2", "ninja", "cmake.install")
         "Virtualization"        = @("docker-desktop", "virtualbox")
@@ -117,8 +123,10 @@ $PackageDefinitions = @{
         "Communication"         = @("discord")
         "DevOps & Cloud"        = @("awscli", "azure-cli", "terraform", "kubernetes-cli")
         "Runtimes Essentials"  = @("vcredist-all", "dotnetfx", "directx")
-        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty.install", "zap", "ilspy", "volatility", "fiddler", "proxifier", "cheatengine")
-        "Reverse Engineering Pack" = @("ida-free", "rizin", "cutter", "ollydbg", "hxd", "hiew")
+        # Fixed: Replaced zap -> owaspzap
+        "Cybersecurity & Pentest" = @("nmap", "wireshark", "burp-suite-free-edition", "ghidra", "x64dbg.portable", "sysinternals", "hashcat", "autopsy", "putty.install", "owaspzap", "ilspy", "volatility", "fiddler", "proxifier", "cheatengine")
+        # Fixed: Removed hiew (obsolete, no alternative)
+        "Reverse Engineering Pack" = @("ida-free", "rizin", "cutter", "ollydbg", "hxd")
         "Terminal Enhancements" = @("oh-my-posh", "nerd-fonts-cascadiacode")
     }
 }
@@ -279,6 +287,23 @@ Write-Host "=================================================" -ForegroundColor 
 Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
 Write-Host "================================================="
 Write-Host ""
+
+# Display failed packages summary
+if ($Global:FailedPackages.Count -gt 0) {
+    Write-Host ""
+    Write-Host "=================================================" -ForegroundColor Yellow
+    Write-Host "  PACKAGE INSTALLATION FAILURES SUMMARY" -ForegroundColor Yellow
+    Write-Host "================================================="
+    Write-Host "The following packages failed to install:" -ForegroundColor Yellow
+    foreach ($failure in $Global:FailedPackages) {
+        Write-Host "  - $($failure.Package) (Exit Code: $($failure.ExitCode))" -ForegroundColor Red
+    }
+    Write-Host ""
+    Write-Host "NOTE: Some packages may have been renamed, deprecated, or require" -ForegroundColor Yellow
+    Write-Host "manual installation. Please check the package documentation." -ForegroundColor Yellow
+    Write-Host "=================================================" -ForegroundColor Yellow
+    Write-Host ""
+}
 
 # --- 6. INSTALLING VS CODE EXTENSIONS ---
 Write-Host ""
