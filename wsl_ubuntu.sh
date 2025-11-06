@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 3.9 (Additions: Semgrep, Mycli/Pgcli, Go Witness, Conda. Language: English)
+#  Version 4.0 (Additions: Semgrep, Mycli/Pgcli, Go Witness, Conda. Language: English)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #
@@ -178,14 +178,14 @@ go install github.com/roboll/helmfile@latest
 go install github.com/aquasecurity/trivy/cmd/trivy@latest
 go install github.com/joshmedeski/gum@latest
 go install github.com/tomnomnom/gf@latest
-go install github.com/in-toto/go-witness/cmd/witness@latest # ADDITION: Go Witness
+go install github.com/in-toto/go-witness/cmd/witness@latest
 sudo -u $SUDO_USER ln -sf "$USER_HOME/go/bin/lazygit" /usr/local/bin/
 sudo -u $SUDO_USER ln -sf "$USER_HOME/go/bin/lazydocker" /usr/local/bin/
 sudo -u $SUDO_USER ln -sf "$USER_HOME/go/bin/helmfile" /usr/local/bin/
 sudo -u $SUDO_USER ln -sf "$USER_HOME/go/bin/trivy" /usr/local/bin/
 sudo -u $SUDO_USER ln -sf "$USER_HOME/go/bin/gum" /usr/local/bin/
 sudo -u $SUDO_USER ln -sf "$USER_HOME/go/bin/gf" /usr/local/bin/
-sudo -u $SUDO_USER ln -sf "$USER_HOME/go/bin/witness" /usr/local/bin/ # ADDITION: Go Witness
+sudo -u $SUDO_USER ln -sf "$USER_HOME/go/bin/witness" /usr/local/bin/
 
 
 echo "=========================================="
@@ -412,7 +412,7 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "=========================================="
-echo "  WSL (UBUNTU) SETUP V3.9 COMPLETE!"
+echo "  WSL (UBUNTU) SETUP V4.0 COMPLETE!"
 echo "=========================================="
 echo ""
 echo -e "\033[1;33mIMPORTANT:\033[0m"
