@@ -10,7 +10,7 @@
     "Git.Git",
     "RARLab.WinRAR",
     "AnyDesk.AnyDesk",
-    "OWASP.ZAP"
+    "ZAP.ZAP"
   ],
   "choco": [
     "neovim",
