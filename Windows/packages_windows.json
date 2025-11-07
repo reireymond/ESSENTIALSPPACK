@@ -24,7 +24,7 @@
     "DevToys-app.DevToys",
     "WinMerge.WinMerge",
     "KeePassXCTeam.KeePassXC",
-    "WinDirStat.WinDirStat",
+    "AntibodySoftware.WizTree",
     "WinSCP.WinSCP",
     "TorProject.TorBrowser",
     "ajeetdsouza.zoxide",
@@ -73,7 +73,15 @@
     "JanDeDobbeleer.OhMyPosh",
     "IObit.IObitUnlocker",
     "JetBrains.IntelliJIDEA.Community",
-    "JetBrains.PyCharm.Community"
+    "JetBrains.PyCharm.Community",
+    "File-Bot.EarTrumpet",
+    "ShareX.ShareX",
+    "Revo.Uninstaller.Free",
+    "VLC.VLC",
+    "Bitsum.ProcessLasso",
+    "Cloudflare.WARP",
+    "Sordum.DnsJumper",
+    "SpeedGuide.TCPOptimizer"
   ],
   "choco": [
     "msys2",
