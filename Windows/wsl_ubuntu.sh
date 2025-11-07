@@ -2,7 +2,7 @@
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 5.0 (REFACTORED: Modular functions, JSON config, existence checks)
+#  Version 5.1 (REFACTORED: Added MobSF setup, fixed JSON path)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #
@@ -27,7 +27,8 @@ PYTHON_VERSION="3.11.8"
 JAVA_VERSION="17.0.10-tem"
 RUBY_VERSION="3.2.2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PACKAGES_JSON="$SCRIPT_DIR/packages_linux.json"
+# --- CORREÇÃO DE CAMINHO ---
+PACKAGES_JSON="$SCRIPT_DIR/../Linux/packages_linux.json"
 
 # Track failed installations
 FAILED_PACKAGES=()
@@ -190,6 +191,34 @@ clone_git_repos() {
         fi
     done <<< "$repos"
 }
+
+# --- NOVA FUNÇÃO ---
+# Install/setup specific cloned git repositories
+install_cloned_repos() {
+    echo "=========================================="
+    echo "  Setting up Cloned Repositories"
+    echo "=========================================="
+    
+    local mobsf_dir="$USER_HOME/tools/mobsf"
+    
+    # Check if MobSF was cloned
+    if [ -f "$mobsf_dir/setup.sh" ]; then
+        echo "  → Setting up MobSF (Mobile Security Framework)..."
+        (
+            cd "$mobsf_dir"
+            # Run the setup script as the current user
+            if sudo -u "$CURRENT_USER" ./setup.sh; then
+                echo "  ✓ MobSF setup complete"
+            else
+                echo "  ✗ MobSF setup failed"
+                FAILED_PACKAGES+=("MobSF (setup.sh)")
+            fi
+        )
+    else
+        echo "  i MobSF (not found, skipping setup)"
+    fi
+}
+# --- FIM DA NOVA FUNÇÃO ---
 
 # Install radare2 from source
 install_radare2() {
@@ -689,7 +718,7 @@ install_misc_tools() {
 
 main() {
     echo "=========================================="
-    echo "  Essential's Pack - WSL Setup v5.0"
+    echo "  Essential's Pack - WSL Setup v5.1"
     echo "=========================================="
     echo ""
     
@@ -717,6 +746,8 @@ main() {
     install_go_tools
     install_pip_tools
     clone_git_repos
+    # --- NOVA CHAMADA DE FUNÇÃO ---
+    install_cloned_repos
     install_radare2
     setup_oh_my_zsh
     install_starship
@@ -736,7 +767,7 @@ main() {
     
     echo ""
     echo "=========================================="
-    echo "  WSL (UBUNTU) SETUP V5.0 COMPLETE!"
+    echo "  WSL (UBUNTU) SETUP V5.1 COMPLETE!"
     echo "=========================================="
     echo ""
     echo -e "\033[1;33mIMPORTANT:\033[0m"
@@ -744,6 +775,7 @@ main() {
     echo "2. The Powerlevel10k (p10k) wizard will run on first launch."
     echo "3. If using Starship, disable P10k in .zshrc to avoid conflicts."
     echo "4. Run 'source ~/.zshrc' or restart your terminal to load all changes."
+    echo "5. MobSF is installed at ~/tools/mobsf. Run '~/tools/mobsf/run.sh' to start it."
     echo ""
 }
 
