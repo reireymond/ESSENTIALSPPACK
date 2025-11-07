@@ -12,7 +12,6 @@
     "RARLab.WinRAR",
     "AnyDesk.AnyDesk",
     "ZAP.ZAP",
-    "EclipseFoundation.Eclipse.Java",
     "EclipseAdoptium.Temurin.17.JDK",
     "EclipseAdoptium.Temurin.8.JRE",
     "EclipseAdoptium.Temurin.21.JDK",
@@ -38,7 +37,6 @@
     "Oven-sh.Bun",
     "GitHub.cli",
     "GitHub.GitHubDesktop",
-    "MSYS2.MSYS2",
     "Ninja-build.Ninja",
     "Kitware.CMake",
     "Kitware.ParaView",
@@ -78,6 +76,8 @@
     "JetBrains.PyCharm.Community"
   ],
   "choco": [
+    "msys2",
+    "eclipse-java",
     "prime95",
     "vcredist-all",
     "dotnetfx",
