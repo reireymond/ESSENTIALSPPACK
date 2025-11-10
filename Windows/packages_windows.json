@@ -72,7 +72,8 @@
     "AlDanial.cloc",
     "JanDeDobbeleer.OhMyPosh",
     "IObit.IObitUnlocker",
-    "AntibodySoftware.WizTree"
+    "AntibodySoftware.WizTree",
+    "Sordum.DNSJumper"
   ],
   "choco": [
     "msys2",
@@ -90,6 +91,7 @@
     "volatility3",
     "cheatengine",
     "nerd-fonts-cascadiacode",
-    "visualstudio2022community"
+    "visualstudio2022community",
+    "islc"
   ]
 }
