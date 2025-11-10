@@ -93,5 +93,12 @@
     "nerd-fonts-cascadiacode",
     "visualstudio2022community",
     "islc"
+  ],
+  "portable_apps": [
+    {
+      "name": "TCPOptimizer4",
+      "url": "https://www.speedguide.net/files/TCPOptimizer.exe",
+      "destination": "C:\\Tools\\TCPOptimizer.exe"
+    }
   ]
 }
