@@ -217,6 +217,50 @@ function Install-PackageWithChoco {
     }
 }
 
+function Install-PortableApps {
+    param(
+        [array]$Apps
+    )
+    
+    Write-Host ""
+    Write-Host ">>> Starting Portable App downloads..." -ForegroundColor Yellow
+    Write-Host ""
+    
+    foreach ($app in $Apps) {
+        Write-Host "  -> Downloading: $($app.name)" -ForegroundColor Cyan
+        
+        # Verifica se o arquivo já existe no destino
+        if (Test-Path $app.destination) {
+            Write-Host "  ✓ $($app.name) (already exists at $($app.destination))" -ForegroundColor Green
+            $Global:InstallSummary.Succeeded += $app.name
+            continue
+        }
+        
+        try {
+            # Cria o diretório de destino se não existir
+            $Dir = Split-Path $app.destination -Parent
+            if (-not (Test-Path $Dir)) {
+                New-Item -ItemType Directory -Force -Path $Dir | Out-Null
+            }
+            
+            # Baixa o arquivo
+            Write-Host "    Downloading from $($app.url)..." -ForegroundColor Gray
+            Invoke-WebRequest -Uri $app.url -OutFile $app.destination -ErrorAction Stop
+            
+            Write-Host "  ✓ $($app.name) (downloaded to $($app.destination))" -ForegroundColor Green
+            $Global:InstallSummary.Succeeded += $app.name
+        } catch {
+            Write-Host "  ✗ $($app.name) (Download failed: $($_.Exception.Message))" -ForegroundColor Red
+            # Adiciona ao seu sumário de falhas
+            $Global:InstallSummary.Failed += @{
+                Package = $app.name
+                ExitCode = -1
+                Error = "Download failed: $($_.Exception.Message)"
+            }
+        }
+    }
+}
+
 # Legacy wrapper for compatibility
 function Install-ChocoPackage {
     param(
@@ -567,6 +611,25 @@ foreach ($packageName in $PackageDefinitions.choco) {
         Install-Package -PackageName $packageName -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
     }
 }
+
+Write-Host ""
+Write-Host "=================================================" -ForegroundColor Green
+Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
+Write-Host "================================================="
+Write-Host ""
+
+    else {
+        Install-Package -PackageName $packageName -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
+    }
+}
+
+# --- 5.3: DOWNLOAD PORTABLE APPS (NOVA SEÇÃO) ---
+Write-Host ""
+Write-Host ">>> Starting Portable App downloads..." -ForegroundColor Yellow
+if ($PackageDefinitions.portable_apps) {
+    Install-PortableApps -Apps $PackageDefinitions.portable_apps
+}
+
 
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
