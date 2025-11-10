@@ -612,17 +612,6 @@ foreach ($packageName in $PackageDefinitions.choco) {
     }
 }
 
-Write-Host ""
-Write-Host "=================================================" -ForegroundColor Green
-Write-Host "  WINDOWS TOOLS UPGRADE COMPLETE!" -ForegroundColor Green
-Write-Host "================================================="
-Write-Host ""
-
-    else {
-        Install-Package -PackageName $packageName -InstalledWingetCache $installedWinget -InstalledChocoCache $installedChoco
-    }
-}
-
 # --- 5.3: DOWNLOAD PORTABLE APPS (NOVA SEÇÃO) ---
 Write-Host ""
 Write-Host ">>> Starting Portable App downloads..." -ForegroundColor Yellow
