@@ -73,7 +73,8 @@
     "JanDeDobbeleer.OhMyPosh",
     "IObit.IObitUnlocker",
     "AntibodySoftware.WizTree",
-    "Sordum.DNSJumper"
+    "Sordum.DNSJumper",
+    "Proton.ProtonVPN"
   ],
   "choco": [
     "msys2",
