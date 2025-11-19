@@ -261,6 +261,54 @@ function Install-PortableApps {
     }
 }
 
+function Install-Msys2Packages {
+    param(
+        [string[]]$Packages
+    )
+    
+    Write-Host ""
+    Write-Host ">>> Configuring MSYS2 Environment..." -ForegroundColor Yellow
+    
+    # Localizar o executável bash do MSYS2 (O Chocolatey instala geralmente em C:\tools\msys64)
+    $msysBash = "C:\tools\msys64\usr\bin\bash.exe"
+    if (-not (Test-Path $msysBash)) {
+        # Tenta o caminho padrão alternativo
+        $msysBash = "C:\msys64\usr\bin\bash.exe"
+    }
+
+    if (Test-Path $msysBash) {
+        Write-Host "  -> MSYS2 detected at $msysBash" -ForegroundColor Cyan
+        
+        # Junta a lista de pacotes numa string separada por espaços
+        $packageString = $Packages -join " "
+        
+        Write-Host "  -> Installing internal packages via pacman..." -ForegroundColor Cyan
+        Write-Host "     List: $packageString" -ForegroundColor Gray
+        
+        # Comando para atualizar as chaves e instalar os pacotes
+        # --noconfirm: Não pergunta Sim/Não
+        # --needed: Só instala se não estiver atualizado
+        $cmdArgs = "-l -c 'pacman -Sy --noconfirm --needed $packageString'"
+        
+        try {
+            $process = Start-Process -FilePath $msysBash -ArgumentList $cmdArgs -Wait -PassThru -NoNewWindow
+            
+            if ($process.ExitCode -eq 0) {
+                Write-Host "  ✓ MSYS2 packages installed successfully." -ForegroundColor Green
+                $Global:InstallSummary.Succeeded += "MSYS2-Internal-Packages"
+            } else {
+                throw "Pacman exited with code $($process.ExitCode)"
+            }
+        } catch {
+            Write-Host "  ✗ Failed to install MSYS2 packages: $($_.Exception.Message)" -ForegroundColor Red
+            $Global:InstallSummary.Failed += "MSYS2-Internal-Packages"
+        }
+    } else {
+        Write-Host "  ⊘ MSYS2 installation not found. Skipping internal packages." -ForegroundColor Yellow
+        $Global:InstallSummary.Skipped += "MSYS2-Internal-Packages (Binary not found)"
+    }
+}
+
 # Legacy wrapper for compatibility
 function Install-ChocoPackage {
     param(
