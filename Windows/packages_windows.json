@@ -95,6 +95,19 @@
     "visualstudio2022community",
     "islc"
   ],
+  "msys2": [
+    "base-devel",
+    "git",
+    "nano",
+    "mingw-w64-x86_64-toolchain",
+    "mingw-w64-x86_64-cmake",
+    "mingw-w64-x86_64-python",
+    "mingw-w64-x86_64-nodejs",
+    "openssh",
+    "curl",
+    "wget",
+    "gnu-netcat"
+  ],
   "portable_apps": [
     {
       "name": "TCPOptimizer4",
